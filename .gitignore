@@ -1,0 +1,13 @@
+node_modules/
+Sessions/
+tmp/
+
+# Base de Datos SQLite (Ignorar archivo principal y temporales)
+core/database.db
+core/database.db-wal
+core/database.db-shm
+
+# Archivos basura del Sistema Operativo
+.DS_Store
+Thumbs.db
+desktop.ini
