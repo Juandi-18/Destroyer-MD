@@ -40,7 +40,7 @@ sudo apt install -y && git nodejs npm ffmpeg imagemagick
 ```
 > *2. Clonar el repositorio oficial e instalar dependencias*
 ```bash
-git clone [https://github.com/Juandi-18/Destroyer-MD.git](https://github.com/Juandi-18/Destroyer-MD.git)
+git clone https://github.com/Juandi-18/Destroyer-MD.git
 ```
 
 ```bash
@@ -72,7 +72,7 @@ pkg install -y && git nodejs ffmpeg imagemagick
 ```
 > *3. Clonar repositorio e instalar dependencias*
 ```bash
-git clone [https://github.com/Juandi-18/Destroyer-MD.git](https://github.com/Juandi-18/Destroyer-MD.git)
+git clone https://github.com/Juandi-18/Destroyer-MD.git
 ```
 
 ```bash
