@@ -51,20 +51,30 @@ npm start
 <details>
 <summary><strong>🍒 Termux</strong> — Manualmente</summary>
 
+> *1. Configurar almacenamiento*
 ```bash
-# 1. Configurar almacenamiento
 termux-setup-storage
-
-# 2. Actualizar sistema e instalar paquetes necesarios
-apt update && apt upgrade -y
-pkg install -y git nodejs ffmpeg imagemagick
-
-# 3. Clonar repositorio e instalar dependencias
+```
+> *2. Actualizar sistema e instalar paquetes necesarios*
+```bash
+apt update && apt upgrade -y &&
+pkg install -y && git nodejs ffmpeg imagemagick
+```
+> *3. Clonar repositorio e instalar dependencias*
+```bash
 git clone [https://github.com/Juandi-18/Destroyer-MD.git](https://github.com/Juandi-18/Destroyer-MD.git)
-cd Destroyer-MD
-npm install
+```
 
-# 4. Encender el bot
+```bash
+cd Destroyer-MD
+```
+
+```bash
+npm install
+```
+
+> *4. Encender el bot*
+```bash
 npm start
 ```
 
