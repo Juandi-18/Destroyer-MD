@@ -137,7 +137,7 @@ export default {
                          `> ✈️ *En Extranjero:* ${porcExtK}% (${vExtK.toLocaleString('es-PE')})\n\n` +
                          `------------------------------------\n` +
                          `_📢 Sincronizado e integrado por ámbitos en tiempo real (Fuente: ONPE)._\n` +
-                         `╰ׅ͜─֟͜─͜─ٞ͜─͜─๊͜─͜─๋͜─⃔═̶፝֟͜═̶⃔─๋͜─͜─͜─๊͜─ٞ͜─͜─֟͜┈ࠢ͜╯ׅ`;
+                         `╰─────────────────────────────────────╯`;
 
       cacheData = textoFinal;
       cacheTime = tiempoActual;
