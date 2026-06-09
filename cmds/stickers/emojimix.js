@@ -19,7 +19,7 @@ export default {
       const name = user.name || msg.sender.split('@')[0];
       const meta1 = user.metadatos ? String(user.metadatos).trim() : '';
       const meta2 = user.metadatos2 ? String(user.metadatos2).trim() : '';
-      let texto1 = meta1 ? meta1 : 'ʏᴜᴋɪ 🧠 Wᴀʙᴏᴛ';
+      let texto1 = meta1 ? meta1 : 'ᴅᴇsᴛʀᴏʏᴇʀ 🧠 Wᴀʙᴏᴛ';
       let texto2 = meta1 ? (meta2 ? meta2 : '') : `@${name}`;
       const res = await fetchJson(`https://tenor.googleapis.com/v2/featured?key=AIzaSyAyimkuYQYF_FXVALexPuGQctUWRURdCYQ&contentfilter=high&media_filter=png_transparent&component=proactive&collection=emoji_kitchen_v5&q=${encodeURIComponent(emoji1)}_${encodeURIComponent(emoji2)}`);
       if (!res.results || res.results.length === 0) {

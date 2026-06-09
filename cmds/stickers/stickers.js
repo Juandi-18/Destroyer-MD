@@ -96,7 +96,7 @@ export default {
         emojis: ['🎭']
       }));
       if (!stickerResults.length) return sock.reply(msg.chat, `《✧》 No se pudieron procesar los stickers del pack.`, msg);
-      await sock.sendMessage(msg.chat, { stickerPack: { name: packName, publisher: author?.name || author?.username || `@${name}`, description: 'ʏᴜᴋɪ 🧠 Wᴀʙᴏᴛ', stickers: stickerResults } }, { quoted: msg });
+      await sock.sendMessage(msg.chat, { stickerPack: { name: packName, publisher: author?.name || author?.username || `@${name}`, description: 'ᴅᴇsᴛʀᴏʏᴇʀ 🧠 Wᴀʙᴏᴛ', stickers: stickerResults } }, { quoted: msg });
       await msg.react('✔️');
     } catch (e) {
       await msg.react('✖️');
