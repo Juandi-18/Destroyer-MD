@@ -67,8 +67,7 @@ termux-setup-storage
 ```
 > *2. Actualizar sistema e instalar paquetes necesarios*
 ```bash
-apt update && apt upgrade -y &&
-pkg install -y && git nodejs ffmpeg imagemagick
+apt update && apt upgrade -y && pkg install -y git nodejs ffmpeg imagemagick
 ```
 > *3. Clonar repositorio e instalar dependencias*
 ```bash
