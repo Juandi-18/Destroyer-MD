@@ -1,15 +1,23 @@
 import db from '#db';
 
+// Usamos la misma constante matemática de tu comando de niveles principal
+const growth = Math.pow(Math.PI / Math.E, 1.618) * Math.E * 0.75;
+
+function getMinXpForLevel(level, multiplier = 2) {
+  const mult = (typeof multiplier === 'number' && multiplier > 0) ? multiplier : 2;
+  if (level <= 0) return 0;
+  level = Math.floor(level);
+  return Math.round(Math.pow(level, growth) * mult) + 1;
+}
+
 export default {
   command: ['dellevel', 'quitarnivel'],
   category: 'owner',
-  description: 'Quitar niveles a un usuario.',
+  description: 'Quitar niveles y reducir la experiencia correspondiente de un usuario.',
   isOwner: true, 
   run: async ({ msg, sock, args, isOwner }) => {
-    // Definir quién es el bot
     const botJid = sock.user.id.split(':')[0] + '@s.whatsapp.net';
     
-    // Validar si quien escribe es el Dueño O el propio Bot
     if (!isOwner && msg.sender !== botJid) {
       return msg.reply("❌ Este comando es exclusivo para mis dueños.");
     }
@@ -26,13 +34,19 @@ export default {
 
     const currentLevel = user.level || 0;
 
-    // Calculamos el nuevo nivel y lo fijamos en 0 si el resultado es negativo
     let newLevel = currentLevel - amount;
     if (newLevel < 0) {
       newLevel = 0; 
     }
 
+    // 🧠 CÁLCULO DE EXPERIENCIA: Sincronizamos la XP al nivel inferior de forma matemática
+    const activeMultiplier = global.multiplier || 2;
+    const newXp = getMinXpForLevel(newLevel, activeMultiplier);
+
+    // Actualizamos de manera atómica ambas propiedades en tu base de datos
     db.setUser(who, 'level', newLevel);
-    msg.reply(` Se han quitado niveles. @${who.split('@')[0]} ahora es nivel *${newLevel}*.`, { mentions: [who] });
+    db.setUser(who, 'exp', newXp);
+
+    msg.reply(`🔻 Se han quitado *${amount}* niveles.\n@${who.split('@')[0]} ahora es nivel *${newLevel}* y su experiencia se redujo a *${newXp.toLocaleString('es-PE')} XP*.`, { mentions: [who] });
   }
 };

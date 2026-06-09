@@ -1,15 +1,23 @@
 import db from '#db';
 
+// Usamos la misma constante matemática de tu comando de niveles principal
+const growth = Math.pow(Math.PI / Math.E, 1.618) * Math.E * 0.75;
+
+function getMinXpForLevel(level, multiplier = 2) {
+  const mult = (typeof multiplier === 'number' && multiplier > 0) ? multiplier : 2;
+  if (level <= 0) return 0;
+  level = Math.floor(level);
+  return Math.round(Math.pow(level, growth) * mult) + 1;
+}
+
 export default {
   command: ['addlevel', 'obtenernivel'],
   category: 'owner',
-  description: 'Añadir niveles a un usuario.',
+  description: 'Añadir niveles y ajustar la experiencia correspondiente de un usuario.',
   isOwner: true,
   run: async ({ msg, sock, args, isOwner }) => {
-    // Definir quién es el bot
     const botJid = sock.user.id.split(':')[0] + '@s.whatsapp.net';
     
-    // Validar si quien escribe es el Dueño O el propio Bot
     if (!isOwner && msg.sender !== botJid) {
       return msg.reply("❌ Este comando es exclusivo para mis dueños.");
     }
@@ -31,7 +39,16 @@ export default {
       return msg.reply(`⚠️ Límite superado. El nivel máximo es *${MAX_LEVEL}*. Si añades esta cantidad, el usuario llegaría al nivel ${currentLevel + amount}.\n> Nivel actual: *${currentLevel}*`);
     }
 
-    db.setUser(who, 'level', currentLevel + amount);
-    msg.reply(`✅ Se han añadido *${amount}* niveles. @${who.split('@')[0]} ahora es nivel *${currentLevel + amount}*.`, { mentions: [who] });
+    const newLevel = currentLevel + amount;
+    
+    // 🧠 CÁLCULO DE EXPERIENCIA: Obtenemos el nuevo piso de XP para el nivel resultante
+    const activeMultiplier = global.multiplier || 2;
+    const newXp = getMinXpForLevel(newLevel, activeMultiplier);
+
+    // Guardamos de forma sincronizada ambos valores en tu SQLite
+    db.setUser(who, 'level', newLevel);
+    db.setUser(who, 'exp', newXp);
+
+    msg.reply(`✅ Se han añadido *${amount}* niveles.\n@${who.split('@')[0]} ahora es nivel *${newLevel}* y su experiencia se ajustó a *${newXp.toLocaleString('es-PE')} XP*.`, { mentions: [who] });
   }
 };

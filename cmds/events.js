@@ -33,10 +33,13 @@ export default async (sock, msg) => {
       const chat = db.getChat(anu.id) || {};
       const settings = db.getSettings(botId) || {};
       const primaryBotId = chat?.primaryBot;
+      
+      // CORREGIDO: Zona horaria sincronizada a Perú
       const now = new Date();
-      const colombianTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Bogota' }));
-      const tiempo = colombianTime.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/,/g, '');
-      const tiempo2 = moment.tz('America/Bogota').format('hh:mm A');
+      const peruTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Lima' }));
+      const tiempo = peruTime.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/,/g, '');
+      const tiempo2 = moment.tz('America/Lima').format('hh:mm A');
+      
       const memberCount = metadata?.participants?.length || 0;
       const isSelf = (settings.self ?? false) || (chat.isMute ?? false);
       if (isSelf) return;

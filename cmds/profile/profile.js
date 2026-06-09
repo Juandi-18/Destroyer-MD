@@ -70,8 +70,14 @@ export default {
     try {
       const rank = sortedLevel.findIndex((u) => u.jid === userId) + 1;
       const { min, xp } = xpRange(nivel, global.multiplier);
-      const progreso = exp - min;
-      const porcentaje = xp > 0 ? Math.floor((progreso / xp) * 100) : 0;      
+      
+      // CORREGIDO: Declarado con let para permitir reasignación y aplicar los escudos de protección
+      let progreso = exp - min;
+      if (progreso < 0) progreso = 0; 
+      
+      let porcentaje = xp > 0 ? Math.floor((progreso / xp) * 100) : 0;      
+      if (porcentaje > 100) porcentaje = 100;
+
       const profileText = `「✿」 *Perfil* ◢ ${name} ◤${desc}
 
     ♛ Cumpleaños › *${birth}*
