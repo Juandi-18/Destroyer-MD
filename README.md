@@ -38,7 +38,13 @@ Bot supremo es un bot de WhatsApp tomando a Yuki-bot como base. Prácticamente e
 sudo apt update && sudo apt upgrade -y &&
 sudo apt install -y && git nodejs npm ffmpeg imagemagick
 ```
-> *2. Clonar el repositorio oficial e instalar dependencias*
+
+> *2. Actualizar sistema e instalar paquetes necesarios*
+```bash
+apt update && apt upgrade -y && pkg install -y git nodejs ffmpeg imagemagick python curl && curl -L [https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp](https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp) -o $PREFIX/bin/yt-dlp && chmod +x $PREFIX/bin/yt-dlp
+```
+
+> *3. Clonar el repositorio oficial e instalar dependencias*
 ```bash
 git clone https://github.com/Juandi-18/Destroyer-MD.git
 ```
@@ -51,7 +57,7 @@ cd Destroyer-MD
 npm install
 ```
 
-> *3. Iniciar el bot principal*
+> *4. Iniciar el bot principal*
 ```bash
 npm start
 ```
