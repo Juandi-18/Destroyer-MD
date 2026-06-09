@@ -18,7 +18,8 @@ global.my = {
 // --- GRUPOS CON CATEGORÍA NSFW BLOQUEADA ---
 global.nsfwBlockedGroups = [
   '51921532849-1517242067@g.us', 
-  '120363409207186414@g.us'
+  '120363409207186414@g.us',
+  '120363428056235509@g.us'
 ];
 
 global.APIs = { 

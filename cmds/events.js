@@ -74,11 +74,11 @@ export default async (sock, msg) => {
         }
         if (anu.action === 'promote' && chat?.alerts && (!primaryBotId || primaryBotId === botId)) {
           const authorJid = normalizeJid(anu.author) || anu.author;
-          await sock.sendMessage(anu.id, { text: `「✎」 *@${phone}* ha sido promovido a Administrador por *@${authorJid.split('@')[0]}.*`, mentions: [jid, authorJid, ...groupAdmins] });
+          await sock.sendMessage(anu.id, { text: `「✎」 *@${phone}* ha sido promovido a Administrador por *@${authorJid.split('@')[0]}.*`, mentions: [jid, authorJid] });
         }
         if (anu.action === 'demote' && chat?.alerts && (!primaryBotId || primaryBotId === botId)) {
           const authorJid = normalizeJid(anu.author) || anu.author;
-          await sock.sendMessage(anu.id, { text: `「✎」 *@${phone}* ha sido degradado de Administrador por *@${authorJid.split('@')[0]}.*`, mentions: [jid, authorJid, ...groupAdmins] });
+          await sock.sendMessage(anu.id, { text: `「✎」 *@${phone}* ha sido degradado de Administrador por *@${authorJid.split('@')[0]}.*`, mentions: [jid, authorJid] });
         }
       }
     } catch (err) {

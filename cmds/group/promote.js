@@ -15,7 +15,6 @@ export default {
       }
       const targetJid = participant?.id || who;
       await sock.groupParticipantsUpdate(msg.chat, [targetJid], 'promote');
-      await sock.sendMessage(msg.chat, { text: `✿ *@${whoBase}* ha sido promovido a administrador del grupo!`, mentions: [who] }, { quoted: msg });
     } catch (e) {
       await msg.reply(`> An unexpected error occurred while executing command *${usedPrefix + command}*. Please try again or contact support if the issue persists.\n> [Error: *${e.message}*]`);
     }

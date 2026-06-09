@@ -384,6 +384,8 @@ anime: `» ˚୨•(=^●ω●^=)• ⊹ 𝐀𝐍𝐈𝐌𝐄 ⊹
 
 ✧ *$prefixwaifu » $prefixneko*
 > Buscar una waifu aleatoria.
+✧ *$prefixship » $prefixpareja » $prefixshippear*
+> Buscar una waifu aleatoria.
 ✧ *$prefixppcouple » $prefixppcp*
 > Generar imágenes para amistades o parejas.
 ✧ *$prefixhug » $prefixabrazar* <mention>

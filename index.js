@@ -62,7 +62,6 @@ async function loadBots() {
     const totalActive = subsCount + premiumCount;
     if (totalActive >= 50) {
       log.warn(`Límite de clones alcanzado (${totalActive}/50). No se iniciarán más Sub-Bots hasta liberar espacios.`);
-      // Reintentamos más tarde
       setTimeout(loadBots, 30 * 1000);
       return;
     }
@@ -75,7 +74,8 @@ async function loadBots() {
       const sessionPath = path.join(folder, userId);
       const credsPath = path.join(sessionPath, 'creds.json');
       if (!fs.existsSync(credsPath)) continue;
-      if (global.conns.some((conn) => conn.userId === userId)) continue;
+      // CRUCIAL: Evitar duplicados si ya está en global.conns
+      if (global.conns.some((conn) => conn?.userId === userId && conn?.sessionFolder === sessionPath)) continue;
       if (reconnecting.has(userId)) continue;
       try {
         reconnecting.add(userId);
@@ -85,10 +85,12 @@ async function loadBots() {
         console.log(chalk.gray(`[ loadBots ] Error iniciando ${name} ${userId}: ${e?.message || e}`));
         reconnecting.delete(userId);
       }
-      await new Promise((res) => setTimeout(res, 500));
+      // Pequeño delay para evitar race conditions
+      await new Promise((res) => setTimeout(res, 800));
     }
   }
-  setTimeout(loadBots, 30 * 1000);
+  // Reducir frecuencia de verificación para evitar spam de logs
+  setTimeout(loadBots, 45 * 1000);
 }
 
 async function initDB() {

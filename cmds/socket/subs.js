@@ -36,6 +36,12 @@ function normalizePhone(input) {
 export async function startSubBot(msg, client, caption = '', isCode = false, phone = '', chatId = '', isCommand = false) {
   const id = phone || (msg?.sender || '').split('@')[0];
   
+  // Validar que el id no sea vacío ni "undefined"
+  if (!id || id === 'undefined' || id.length < 2) {
+    console.error(chalk.red(`[ ERROR ] ID inválido para Sub-Bot: "${id}". Se requiere un número válido.`));
+    return null;
+  }
+  
   // Detección dinámica de la jerarquía según los metadatos del usuario
   const user = db.getUser(msg?.sender || id + '@s.whatsapp.net');
   const isPremiumUser = user?.premiumTime && user.premiumTime > Date.now();
@@ -46,6 +52,17 @@ export async function startSubBot(msg, client, caption = '', isCode = false, pho
   const senderId = msg?.sender || id + '@s.whatsapp.net';
   
   if (!fs.existsSync(sessionFolder)) fs.mkdirSync(sessionFolder, { recursive: true });
+
+  // Guardar metadato para prevenir confusión de credenciales
+  const metadataFile = path.join(sessionFolder, 'metadata.json');
+  if (!fs.existsSync(metadataFile)) {
+    fs.writeFileSync(metadataFile, JSON.stringify({
+      createdAt: new Date().toISOString(),
+      type: carpetaDestino,
+      ownerJid: senderId,
+      originalPhone: id
+    }, null, 2));
+  }
 
   const { state, saveCreds } = await useMultiFileAuthState(sessionFolder);
   const { version } = await fetchLatestBaileysVersion();
@@ -76,6 +93,7 @@ export async function startSubBot(msg, client, caption = '', isCode = false, pho
   socks.client = client || socks;
   socks.isCode = isCode;
   socks.sessionFolder = sessionFolder;
+  socks.botType = carpetaDestino;
   
   let sentMsg = null;
   let msgCode = null;
@@ -185,8 +203,11 @@ export async function startSubBot(msg, client, caption = '', isCode = false, pho
       const reason = lastDisconnect?.error?.output?.statusCode || lastDisconnect?.reason || 0;
 
       const cleanupOldConn = () => {
-        const index = global.conns.findIndex((c) => c && (c.sessionFolder === socks.sessionFolder || c.userId === socks.userId));
-        if (index !== -1) global.conns.splice(index, 1);
+        const index = global.conns.findIndex((c) => c && c.sessionFolder === socks.sessionFolder);
+        if (index !== -1) {
+          global.conns.splice(index, 1);
+          console.log(chalk.gray(`[ ✿ ] Sub-Bot ${botId} removido de conexiones activas.`));
+        }
       };
 
       if (socks.isLoggingOut || socks.isReloading) {
@@ -195,9 +216,12 @@ export async function startSubBot(msg, client, caption = '', isCode = false, pho
         await limpiarMensajesVinculacion();
         if (socks.isLoggingOut && fs.existsSync(sessionFolder)) {
           setTimeout(() => {
-            try { fs.rmSync(sessionFolder, { recursive: true, force: true }); }
+            try {
+              fs.rmSync(sessionFolder, { recursive: true, force: true });
+              console.log(chalk.gray(`[ ✿ ] Sesión limpiada: ${sessionFolder}`));
+            }
             catch (e) { console.error(`[ ✿  ] No se pudo eliminar ${sessionFolder}:`, e); }
-          }, 5000);
+          }, 3000);
         }
         return;
       }
@@ -205,22 +229,26 @@ export async function startSubBot(msg, client, caption = '', isCode = false, pho
       if ([401, 403].includes(reason)) {
         reintentos[botId] = (reintentos[botId] || 0) + 1;
         if (reintentos[botId] <= 5) {
-          console.log(chalk.gray(`[ ✿  ]  SUB-BOT ${botId} Conexión cerrada (código ${reason}) intento ${reintentos[botId]}/5 → Esperando...`));
-          setTimeout(() => startSubBot(msg, getClient(client), caption, isCode, phone, chatId, isCommand), 10000);
+          console.log(chalk.gray(`[ ✿  ]  SUB-BOT ${botId} Desautenticado (${reason}), intento ${reintentos[botId]}/5...`));
+          setTimeout(() => startSubBot(msg, getClient(client), caption, isCode, phone, chatId, isCommand), 8000);
         } else {
-          console.log(chalk.gray(`[ ✿  ]  SUB-BOT ${botId} Falló tras 5 intentos. Deteniendo socket de forma segura.`));
+          console.log(chalk.gray(`[ ✿  ]  SUB-BOT ${botId} Falló permanentemente (${reason}). Limpiando sesión.`));
           delete reintentos[botId];
-          await limpiarMensajesVinculacion();
           cleanupOldConn();
-          try {
-            if (fs.existsSync(sessionFolder)) {
-              setTimeout(() => { fs.rmSync(sessionFolder, { recursive: true, force: true }); }, 5000);
-            }
-          } catch (e) { console.error(`[ ✿  ] No se pudo eliminar ${sessionFolder}:`, e); }
+          await limpiarMensajesVinculacion();
+          if (fs.existsSync(sessionFolder)) {
+            setTimeout(() => {
+              try {
+                fs.rmSync(sessionFolder, { recursive: true, force: true });
+                console.log(chalk.gray(`[ ✿ ] Sesión fallida eliminada: ${sessionFolder}`));
+              } catch (e) { console.error(`[ ✿  ] No se pudo eliminar ${sessionFolder}:`, e); }
+            }, 3000);
+          }
         }
         return;
       }
       cleanupOldConn();
+      console.log(chalk.gray(`[ ✿  ]  SUB-BOT ${botId} reconectando en 5s...`));
       setTimeout(() => startSubBot(msg, getClient(client), caption, isCode, phone, chatId, isCommand), 5000);
     }
     

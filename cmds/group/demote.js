@@ -20,7 +20,6 @@ export default {
       if (targetJid === ownerBot) return msg.reply('《✧》 No puedes degradar al creador del bot de administrador.');
       if (targetJid === sock.decodeJid(sock.user.id)) return msg.reply('《✧》 No puedes degradar al bot de administrador.');
       await sock.groupParticipantsUpdate(msg.chat, [targetJid], 'demote');
-      await sock.sendMessage(msg.chat, { text: `✿ *@${whoBase}* ha sido degradado de administrador del grupo!`, mentions: [who] }, { quoted: msg });
     } catch (e) {
       await msg.reply(`> An unexpected error occurred while executing command *${usedPrefix + command}*. Please try again or contact support if the issue persists.\n> [Error: *${e.message}*]`);
     }

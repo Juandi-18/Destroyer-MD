@@ -75,10 +75,10 @@ export default {
       const isAnimated = quoted.msg && quoted.msg.isAnimated;      
       if (isAnimated) {
         const mp4Buffer = await webp2mp4(buffer);
-        await sock.sendMessage(msg.chat, { video: mp4Buffer, caption: 'ꕥ *Aquí tienes ฅ^•ﻌ•^ฅ*', gifPlayback: true }, { quoted: msg });
+        await sock.sendMessage(msg.chat, { video: mp4Buffer, caption: '', gifPlayback: true }, { quoted: msg });
       } else {
         const pngBuffer = await webp2png(buffer);
-        await sock.sendMessage(msg.chat, { image: pngBuffer, caption: 'ꕥ *Aquí tienes ฅ^•ﻌ•^ฅ*' }, { quoted: msg });
+        await sock.sendMessage(msg.chat, { image: pngBuffer, caption: '' }, { quoted: msg });
       }      
       await msg.react('✔️');
     } catch (error) {
