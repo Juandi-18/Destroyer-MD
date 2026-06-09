@@ -75,9 +75,21 @@ termux-setup-storage
 ```bash
 apt update && apt upgrade -y && pkg install -y git nodejs ffmpeg imagemagick
 ```
-> *3. Clonar repositorio e instalar dependencias*
+> *3. Configurar herramientas de compilación para los Banners*
 ```bash
-git clone https://github.com/Juandi-18/Destroyer-MD.git
+pkg install -y build-essential binutils c-ares openssl libuv libjpeg-turbo libpng littlecms jpegoptim graphicsmagick
+```
+> *4. Instalar y dar permisos al motor MP3 (yt-dlp)*
+```bash
+curl -L [https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp](https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp) -o $PREFIX/bin/yt-dlp
+```
+
+```bash
+chmod +x $PREFIX/bin/yt-dlp
+```
+> *5. Clonar repositorio e ingresar a la carpeta*
+```bash
+git clone [https://github.com/Juandi-18/Destroyer-MD.git](https://github.com/Juandi-18/Destroyer-MD.git)
 ```
 
 ```bash
@@ -88,7 +100,7 @@ cd Destroyer-MD
 npm install
 ```
 
-> *4. Encender el bot*
+> *6. Encender el bot*
 ```bash
 npm start
 ```
