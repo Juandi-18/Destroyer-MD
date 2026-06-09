@@ -45,12 +45,61 @@ export async function startSubBot(msg, client, caption = '', isCode = false, pho
   // Detección dinámica de la jerarquía según los metadatos del usuario
   const user = db.getUser(msg?.sender || id + '@s.whatsapp.net');
   const isPremiumUser = user?.premiumTime && user.premiumTime > Date.now();
-  
-  // Si el caption incluye corona o el comando fue premium, va directo a la carpeta Premium
-  const carpetaDestino = (isPremiumUser && (caption.includes('👑') || isCode)) ? 'Premium' : 'Subs';
-  const sessionFolder = `./Sessions/${carpetaDestino}/${id}`;
   const senderId = msg?.sender || id + '@s.whatsapp.net';
-  
+
+  const premiumFolder = `./Sessions/Premium/${id}`;
+  const subsFolder = `./Sessions/Subs/${id}`;
+  let carpetaDestino = isPremiumUser ? 'Premium' : 'Subs';
+  let sessionFolder = `./Sessions/${carpetaDestino}/${id}`;
+
+  // si el usuario es premium pero su sesión todavía está en Subs, migrar automáticamente
+  if (isPremiumUser && fs.existsSync(subsFolder) && !fs.existsSync(premiumFolder)) {
+    try {
+      fs.mkdirSync(path.dirname(premiumFolder), { recursive: true });
+      fs.renameSync(subsFolder, premiumFolder);
+      console.log(chalk.gray(`[ ✿ ] Sesión migrada automáticamente Subs → Premium: ${id}`));
+    } catch (error) {
+      console.error('[ auto-migrate Subs→Premium ] Error:', error);
+      const copyDirSync = (src, dest) => {
+        fs.mkdirSync(dest, { recursive: true });
+        fs.readdirSync(src).forEach((file) => {
+          const srcFile = path.join(src, file);
+          const destFile = path.join(dest, file);
+          if (fs.statSync(srcFile).isDirectory()) copyDirSync(srcFile, destFile);
+          else fs.copyFileSync(srcFile, destFile);
+        });
+      };
+      copyDirSync(subsFolder, premiumFolder);
+      fs.rmSync(subsFolder, { recursive: true, force: true });
+      console.log(chalk.gray(`[ ✿ ] Sesión copiada automáticamente Subs → Premium: ${id}`));
+    }
+    sessionFolder = premiumFolder;
+  }
+
+  // si el usuario ya no es premium pero su sesión está en Premium, degradarla automáticamente
+  if (!isPremiumUser && fs.existsSync(premiumFolder) && !fs.existsSync(subsFolder)) {
+    try {
+      fs.mkdirSync(path.dirname(subsFolder), { recursive: true });
+      fs.renameSync(premiumFolder, subsFolder);
+      console.log(chalk.gray(`[ ✿ ] Sesión migrada automáticamente Premium → Subs: ${id}`));
+    } catch (error) {
+      console.error('[ auto-migrate Premium→Subs ] Error:', error);
+      const copyDirSync = (src, dest) => {
+        fs.mkdirSync(dest, { recursive: true });
+        fs.readdirSync(src).forEach((file) => {
+          const srcFile = path.join(src, file);
+          const destFile = path.join(dest, file);
+          if (fs.statSync(srcFile).isDirectory()) copyDirSync(srcFile, destFile);
+          else fs.copyFileSync(srcFile, destFile);
+        });
+      };
+      copyDirSync(premiumFolder, subsFolder);
+      fs.rmSync(premiumFolder, { recursive: true, force: true });
+      console.log(chalk.gray(`[ ✿ ] Sesión copiada automáticamente Premium → Subs: ${id}`));
+    }
+    sessionFolder = subsFolder;
+  }
+
   if (!fs.existsSync(sessionFolder)) fs.mkdirSync(sessionFolder, { recursive: true });
 
   // Guardar metadato para prevenir confusión de credenciales
@@ -207,6 +256,11 @@ export async function startSubBot(msg, client, caption = '', isCode = false, pho
         if (index !== -1) {
           global.conns.splice(index, 1);
           console.log(chalk.gray(`[ ✿ ] Sub-Bot ${botId} removido de conexiones activas.`));
+        }
+        // NUEVO: Limpiar también de global.loadingBots
+        if (global.loadingBots) {
+          global.loadingBots.delete(botId);
+          global.loadingBots.delete(socks.userId);
         }
       };
 

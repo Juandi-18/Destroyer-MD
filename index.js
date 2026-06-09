@@ -50,9 +50,54 @@ const botTypes = [
 
 if (!fs.existsSync('./tmp')) fs.mkdirSync('./tmp', { recursive: true });
 global.conns = global.conns || [];
+global.loadingBots = global.loadingBots || new Set(); // NUEVO: Rastrear bots que se están cargando
 const reconnecting = new Set();
 const msgStore = new Map();
 const msgLimit = 500;
+
+// NUEVO: Función auxiliar para detectar y limpiar sesiones duplicadas
+function checkForDuplicateSessions() {
+  try {
+    const subsDir = './Sessions/Subs';
+    const premiumDir = './Sessions/Premium';
+    
+    if (!fs.existsSync(subsDir) || !fs.existsSync(premiumDir)) return;
+    
+    const subIds = new Set(fs.readdirSync(subsDir).filter(id => fs.existsSync(path.join(subsDir, id, 'creds.json'))));
+    const premiumIds = new Set(fs.readdirSync(premiumDir).filter(id => fs.existsSync(path.join(premiumDir, id, 'creds.json'))));
+    
+    // Encontrar IDs duplicados
+    const duplicates = [...subIds].filter(id => premiumIds.has(id));
+    
+    if (duplicates.length > 0) {
+      log.warn(`⚠️  Se encontraron ${duplicates.length} sesiones duplicadas en Subs y Premium`);
+      
+      for (const id of duplicates) {
+        const subsPath = path.join(subsDir, id);
+        const premiumPath = path.join(premiumDir, id);
+        
+        // Determinar cuál carpeta eliminar basado en las credenciales
+        try {
+          const subsCreds = fs.existsSync(path.join(subsPath, 'creds.json'));
+          const premiumCreds = fs.existsSync(path.join(premiumPath, 'creds.json'));
+          
+          // Eliminar la sesión de Subs si existe Premium (Premium tiene prioridad)
+          if (premiumCreds) {
+            fs.rmSync(subsPath, { recursive: true, force: true });
+            log.warn(`🗑️  Sesión duplicada ${id} eliminada de Subs (Premium tiene prioridad)`);
+          } else {
+            fs.rmSync(premiumPath, { recursive: true, force: true });
+            log.warn(`🗑️  Sesión duplicada ${id} eliminada de Premium (Subs tiene credenciales válidas)`);
+          }
+        } catch (e) {
+          console.log(chalk.gray(`[ checkForDuplicateSessions ] Error limpiando ${id}: ${e?.message}`));
+        }
+      }
+    }
+  } catch (e) {
+    console.log(chalk.gray(`[ checkForDuplicateSessions ] Error: ${e?.message}`));
+  }
+}
 
 async function loadBots() {
   // Control global de máxima concurrencia de clones (Subs + Premium)
@@ -67,6 +112,9 @@ async function loadBots() {
     }
   } catch (e) { console.log(chalk.gray(`[ loadBots ] Error contando sesiones: ${e?.message || e}`)); }
 
+  // NUEVO: Verificar sesiones duplicadas cada vez que se ejecuta loadBots
+  checkForDuplicateSessions();
+
   for (const { name, folder, starter } of botTypes) {
     if (!fs.existsSync(folder)) continue;
     const botIds = fs.readdirSync(folder);
@@ -74,16 +122,27 @@ async function loadBots() {
       const sessionPath = path.join(folder, userId);
       const credsPath = path.join(sessionPath, 'creds.json');
       if (!fs.existsSync(credsPath)) continue;
-      // CRUCIAL: Evitar duplicados si ya está en global.conns
-      if (global.conns.some((conn) => conn?.userId === userId && conn?.sessionFolder === sessionPath)) continue;
+      
+      // MEJORADO: Evitar duplicados por userId (independiente de carpeta) Y por sessionPath exacta
+      if (global.conns.some((conn) => conn?.userId === userId)) {
+        // Si ya existe una conexión activa con este ID, SKIP
+        continue;
+      }
+      if (global.loadingBots.has(userId)) {
+        // Si ya se está cargando, SKIP
+        continue;
+      }
       if (reconnecting.has(userId)) continue;
       try {
         reconnecting.add(userId);
+        global.loadingBots.add(userId); // NUEVO: Marcar como cargando
         // Iniciamos el subbot pasando el userId como teléfono para una carga de persistencia limpia
         await starter(null, null, '', false, userId, '', false);
       } catch (e) {
         console.log(chalk.gray(`[ loadBots ] Error iniciando ${name} ${userId}: ${e?.message || e}`));
         reconnecting.delete(userId);
+      } finally {
+        global.loadingBots.delete(userId); // NUEVO: Desmarcar como cargado
       }
       // Pequeño delay para evitar race conditions
       await new Promise((res) => setTimeout(res, 800));
