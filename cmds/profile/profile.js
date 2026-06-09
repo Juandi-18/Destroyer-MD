@@ -80,20 +80,20 @@ export default {
 
       const profileText = `「✿」 *Perfil* ◢ ${name} ◤${desc}
 
-    ♛ Cumpleaños › *${birth}*
-    ⸙ Pasatiempo › *${pasatiempo}*
-    ⚥ Género › *${genero}*
-    ♡ ${estadoCivil} › *${pareja}*
+♛ Cumpleaños › *${birth}*
+⸙ Pasatiempo › *${pasatiempo}*
+⚥ Género › *${genero}*
+♡ ${estadoCivil} › *${pareja}*
 
-    ✿ Nivel › *${nivel}*
-    ❀ Experiencia › *${exp.toLocaleString('en-US')}*
-    ➨ Progreso › *${progreso} => ${xp}* _(${porcentaje}%)_
-    ☆ Puesto › *#${rank}*
+✿ Nivel › *${nivel}*
+❀ Experiencia › *${exp.toLocaleString('en-US')}*
+➨ Progreso › *${progreso} => ${xp}* _(${porcentaje}%)_
+☆ Puesto › *#${rank}*
 
-    ꕥ Harem › *${haremCount}*
-    ♤ Valor total › *${haremValue.toLocaleString('en-US')}*${favLine}
-    ⛁ Coins totales › *¥${totalCoins.toLocaleString('en-US')} ${currency}*
-    ❒ Comandos ejecutados › *${comandos.toLocaleString('en-US')}*`;     
+ꕥ Harem › *${haremCount}*
+♤ Valor total › *${haremValue.toLocaleString('en-US')}*${favLine}
+⛁ Coins totales › *¥${totalCoins.toLocaleString('en-US')} ${currency}*
+❒ Comandos ejecutados › *${comandos.toLocaleString('en-US')}*`;     
       await sock.sendMessage(msg.chat, { image: { url: perfil }, caption: profileText }, { quoted: msg });
     } catch (e) {
       return msg.reply(`> An unexpected error occurred while executing command *${usedPrefix + command}*. Please try again or contact support if the issue persists.\n> [Error: *${e.message}*]`);
