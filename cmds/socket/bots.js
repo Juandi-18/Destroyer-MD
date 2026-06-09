@@ -83,7 +83,7 @@ export default {
     
     // Mapeamos los bots Premium activos
     for (const num of premiums) {
-      const line = await formatBot(num, '👑 Premium');
+      const line = await formatBot(num, 'Premiums');
       if (line) categorizedBots.Premium.push(line);
     }
 
@@ -97,9 +97,9 @@ export default {
     const totalShown = categorizedBots.Owner.length + categorizedBots.Sub.length + categorizedBots.Premium.length;
     
     let message = `ꕥ Números de Sockets activos *(${totalBots})*\n\n`;
-    message += `ੈ❖‧₊˚ Principales › *${isMainActive ? 1 : 0}*\n`;
-    message += `ੈ👑‧₊˚ Premiums › *${premiums.length}*\n`;
-    message += `ੈ✿‧₊˚ Subs › *${subs.length}*\n\n`;
+    message += `❖ Principales › *${isMainActive ? 1 : 0}*\n`;
+    message += `✰ Premiums › *${premiums.length}*\n`;
+    message += `✿ Subs › *${subs.length}*\n\n`;
     
     if (isAll) {
       message += `➭ *Lista completa ›* ${totalShown}\n`;

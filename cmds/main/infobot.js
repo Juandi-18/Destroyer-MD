@@ -28,7 +28,7 @@ export default {
     const isPrincipal = botId === mainBotId;
     const botType = isPrincipal 
         ? 'Principal/Owner' 
-        : (botSettings.type === 'Premium' ? 'Premium 👑' : 'Sub Bot');
+        : (botSettings.type === 'Premium' ? '𝐏𝐫𝐞𝐦-𝐁𝐨𝐭' : 'Sub Bot');
     
     let desar = 'Oculto';
     if (owner && !isNaN(owner.replace(/@s\.whatsapp\.net$/, ''))) {

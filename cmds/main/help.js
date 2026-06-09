@@ -36,7 +36,7 @@ export default {
       const targetLink = ensureProtocol(botSettings.link || global.links?.api?.channel || 'https://discord.gg/q7hCyhJyZ8');
       const mainBotId = global.sock?.user?.id?.split(':')[0] + '@s.whatsapp.net';
       const isOficialBot = botId === mainBotId;
-      const botType = isOficialBot ? 'Principal/Owner' : (botSettings.type === 'Premium' ? 'Premium 👑' : 'Sub Bot');
+      const botType = isOficialBot ? 'Principal/Owner' : (botSettings.type === 'Premium' ? '𝐏𝐫𝐞𝐦-𝐁𝐨𝐭' : 'Sub Bot');
       const users = db.getUser();
       const usersCount = users?.length || 0;
       const device = getDevice(msg.key.id);
