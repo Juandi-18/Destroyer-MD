@@ -120,8 +120,8 @@ export default {
                          `🗳️ *CONTEO EN VIVO SEGUNDA VUELTA*\n` +
                          `⏱️ *Corte Oficial ONPE:* ${corteOficial}\n` +
                          `📈 *Actas Contabilizadas Totales:* ${avanceContabilizadas}%\n` +
-                         `> 🇵🇪 *Actas Nacional:* ${actasNacional > 100 ? "100.000" : actasNacional}%\n` +
-                         `> ✈️ *Actas Extranjero:* ${actasExtranjero > 100 ? "100.000" : actasExtranjero}%\n\n` +
+                         ` 🇵🇪 *Actas Nacional Totales:* ${actasNacional > 100 ? "100.000" : actasNacional}%\n` +
+                         ` ✈️ *Actas Extranjero Totales:* ${actasExtranjero > 100 ? "100.000" : actasExtranjero}%\n\n` +
                          `------------------------------------\n\n` +
                          `👒 *${candidatoS.toUpperCase()}*\n` +
                          `_${partidoS}_\n` +
