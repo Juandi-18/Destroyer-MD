@@ -7,7 +7,7 @@ let cacheTime = 0;
 export default {
   command: ['onpe', 'votos', 'resultados', 'segundavuelta'],
   category: 'owner',
-  description: 'Muestra los resultados oficiales globales reales de la ONPE con eventos automatizados al 100% y anuncios VIP.',
+  description: 'Muestra los resultados oficiales globales reales de la ONPE con segmentación avanzada por ID de grupo.',
   admin: false,
   botAdmin: false,
 
@@ -117,19 +117,34 @@ export default {
         let nuevoNombreGrupo = '';
         let esVictoriaKeiko = totalVotosK > totalVotosS;
 
-        // Definimos las listas de excluidos VIP según el caso
+        // Definimos las listas de excluidos VIP basándonos estrictamente en el grupo seleccionado
         const vipKeiko = ['51937748963@s.whatsapp.net', '51976461817@s.whatsapp.net'];
         const vipSanchez = ['51982219982@s.whatsapp.net', '573108615379@s.whatsapp.net'];
-        const excluidosFinales = esVictoriaKeiko ? vipKeiko : vipSanchez;
+        
+        // Solo aplica la exclusión si estamos en el grupo VIP original
+        const excluidosFinales = (msg.chat === '120363417978268908@g.us') ? (esVictoriaKeiko ? vipKeiko : vipSanchez) : [];
 
         if (esVictoriaKeiko) {
           urlFotoGanador = 'https://scontent.fchm1-1.fna.fbcdn.net/v/t39.30808-6/719190170_122245148438105211_3387691587448129228_n.jpg?stp=dst-jpg_tt6&cstp=mx1122x1402&ctp=s640x640&_nc_cat=107&ccb=1-7&_nc_sid=833d8c&_nc_ohc=4BtiPIAC9XEQ7kNvwHJuBu5&_nc_oc=AdopJJf7tloF7BbsYhVsEHdFRNhjJdgfVxXkyA0YdW0Gwsu1yr4KGldrK9SXDI1FWoQnM6bgP2x9GrNkmgVojK1f&_nc_zt=23&_nc_ht=scontent.fchm1-1.fna&_nc_gid=rqfSrPKx83ySZm9lG1n68Q&_nc_ss=7b289&oh=00_Af-su9RhP9t3U5Kb8lL0jJaziCkn9Y94xh8AwlY94w-mmw&oe=6A2ED14B';
-          mensajeGanador = `VIVA EL PRESIDENTE KEIKO SOFIA FUJIMORI HIGUCHI`;
           nuevoNombreGrupo = `Keiko Presidente 2026`;
+          
+          // 🛠️ CONDICIONAL DE MENSAJES DE SPAM SEGÚN EL ID DEL GRUPO
+          if (msg.chat === '51921532849-1517242067@g.us') {
+            mensajeGanador = `VIVA EL PRESIDENTE KEIKO SOFIA FUJIMORI HIGUCHI`; // Mensaje aislado limpio
+          } else {
+            mensajeGanador = `AHI ESTA PS SERRANOS HUEVONES VAYAN A COSECHAR PAPAS ROJOS DE MRD, VIVA EL PRESIDENTE KEIKO SOFIA FUJIMORI HIGUCHI`; // Mensaje para otros grupos
+          }
+
         } else {
           urlFotoGanador = 'https://scontent.fchm1-1.fna.fbcdn.net/v/t39.30808-6/716190543_1009250298352453_8410448401220420667_n.jpg?stp=dst-jpg_tt6&cstp=mx1080x1080&ctp=p526x296&_nc_cat=100&ccb=1-7&_nc_sid=833d8c&_nc_ohc=RhYphDsmgAUQ7kNvwGulaHj&_nc_oc=Adp79RnNCsv-6DyURt64Mgo_ZtD_US27F1MPPkosmeBDKE8Ie_pf_SFuNjTjGLhix0GXFqzMF4sMb8Luy4I7elYp&_nc_zt=23&_nc_ht=scontent.fchm1-1.fna&_nc_gid=UToCtlmWn69j5qpzOyAEQQ&_nc_ss=7b289&oh=00_Af9rmZgdJMt1KpOMlRRGezgnornrMHndxKSD834NfxDZTg&oe=6A2EB9F9';
-          mensajeGanador = `VIVA EL PRESIDENTE ROBERTO HELBERT SANCHEZ PALOMINO`;
           nuevoNombreGrupo = `Sanchez Presidente 2026`;
+
+          // 🛠️ CONDICIONAL DE MENSAJES DE SPAM SEGÚN EL ID DEL GRUPO
+          if (msg.chat === '51921532849-1517242067@g.us') {
+            mensajeGanador = `VIVA EL PRESIDENTE ROBERTO HELBERT SANCHEZ PALOMINO`; // Mensaje aislado limpio
+          } else {
+            mensajeGanador = `AHI ESTA PS MARICONES SUS HIJAS ESTARAN RICAS PERO NUNCA LLEGARA A LA PRESIDENCIA. VIVA EL PRESIDENTE ROBERTO HELBERT SANCHEZ PALOMINO`; // Mensaje para otros grupos
+          }
         }
 
         // Acción A: Cambiar la foto del grupo
@@ -148,7 +163,7 @@ export default {
           console.error('[DESTROYER ERROR] No se pudo cambiar el nombre:', nameError.message);
         }
 
-        // Acción C: Spamear 3 veces la foto del ganador
+        // Acción C: Spamear 3 veces la foto del ganador (Usando la variable condicional mensajeGanador)
         for (let i = 0; i < 3; i++) {
           await sock.sendMessage(msg.chat, { 
             image: { url: urlFotoGanador }, 
@@ -160,14 +175,16 @@ export default {
         // ⏳ ESPERA DE 3 SEGUNDOS ANTES DEL REPORTE DE MIGRACIONES
         await new Promise(res => setTimeout(res, 3000));
 
-        // ✈️ ACCIÓN D: REPORTE DE MIGRACIONES DINÁMICO EXCLUYENDO A LOS VIP
+        // ✈️ ACCIÓN D: REPORTE DE MIGRACIONES DINÁMICO (Corre en todos los grupos de forma normal)
         let groupMetadata;
         try {
           groupMetadata = await sock.groupMetadata(msg.chat);
           let participantes = groupMetadata.participants.map(p => p.id);
 
-          // Filtro crucial: Sacamos de la lista a los amigos premiados para que no se repitan en las fugas
-          participantes = participantes.filter(id => !excluidosFinales.includes(id));
+          // Si hay excluidos configurados para este canal, los saca antes de mezclar
+          if (excluidosFinales.length > 0) {
+            participantes = participantes.filter(id => !excluidosFinales.includes(id));
+          }
 
           participantes.sort(() => Math.random() - 0.5);
           const cantidadElegidos = participantes.length < 10 ? participantes.length : 10;
@@ -201,43 +218,45 @@ export default {
           console.error('[DESTROYER ERROR] Error en reporte de migraciones:', migraError.message);
         }
 
-        // ⏳ ESPERA DE 3 SEGUNDOS ANTES DE CERRAR EL GRUPO Y PREMIAR A LOS VIP
+        // ⏳ ESPERA DE 3 SEGUNDOS ANTES DEL PROTOCOLO DE CLAUSURA VIP
         await new Promise(res => setTimeout(res, 3000));
 
-        // 🔒 ACCIÓN E: CLAUSURA DEL GRUPO Y ANUNCIO GLOBAL VIP
-        try {
-          // Cerramos el chat para simular el control total
-          await sock.groupSettingUpdate(msg.chat, 'announcement');
-          
-          let textoAnuncio = `📢 *ANUNCIO GLOBAL PRESIENCIAL 2026*\n\n`;
-          
-          if (esVictoriaKeiko) {
-            textoAnuncio += `👑 El nuevo régimen ha tomado el control del chat.\n\n` +
-                            `➡️ @51937748963 ahora se convertirá en ahijado de Keiko y será guardaespaldas de Kyara.\n\n` +
-                            `➡️ @51976461817 será su segundo ahijado y será guardaespaldas de Kaori.`;
-          } else {
-            textoAnuncio += `✊ La revolución popular se ha consolidado en el grupo.\n\n` +
-                            `➡️ @51982219982 se convirtió en la mano derecha de Roberto y recibirá 10 hectáreas de terreno en Oxapampa y Tambogrande.\n\n` +
-                            `➡️ @573108615379 recibirá un sueldo de $1,000,000 de dólares anuales por su voto estratégico.`;
-          }
-
-          textoAnuncio += `\n\n_🔒 El chat permanecerá cerrado por 1 minuto para leer las actas presidenciales._`;
-
-          // Enviamos el mensaje arrobando orgánicamente a los involucrados
-          await sock.sendMessage(msg.chat, { text: textoAnuncio, mentions: excluidosFinales });
-
-          // ⏳ CONTADOR DE 1 MINUTO PARA VOLVER A ABRIR EL GRUPO
-          setTimeout(async () => {
-            try {
-              await sock.groupSettingUpdate(msg.chat, 'not_announcement');
-              await sock.sendMessage(msg.chat, { text: `🔓 *Gabinete Terminado:* El grupo ha sido reabierto. ¡Que empiece el debate!` });
-            } catch (openError) {
-              console.error('[DESTROYER ERROR] No se pudo reabrir el grupo:', openError.message);
+        // 🔒 🛠️ ACCIÓN E: CLAUSURA Y ANUNCIO GLOBAL VIP (PROTEGIDA POR ID DE GRUPO)
+        // Solo se ejecutará dentro de tu chat específico '120363417978268908@g.us'
+        if (msg.chat === '120363417978268908@g.us') {
+          try {
+            await sock.groupSettingUpdate(msg.chat, 'announcement');
+            
+            let textoAnuncio = `📢 *ANUNCIO GLOBAL PRESIENCIAL 2026*\n\n`;
+            
+            if (esVictoriaKeiko) {
+              textoAnuncio += `👑 El nuevo régimen ha tomado el control del chat.\n\n` +
+                              `➡️ @51937748963 ahora se convertirá en ahijado de Keiko y será guardaespaldas de Kyara.\n\n` +
+                              `➡️ @51976461817 será su segundo ahijado y será guardaespaldas de Kaori.`;
+            } else {
+              textoAnuncio += `✊ La revolución popular se ha consolidado en el grupo.\n\n` +
+                              `➡️ @51982219982 se convirtió en la mano derecha de Roberto y recibirá 10 hectáreas de terreno en Oxapampa y Tambogrande.\n\n` +
+                              `➡️ @573108615379 recibirá un sueldo de $1,000,000 de dólares anuales por su voto estratégico.`;
             }
-          }, 60000); // 60000ms = 1 minuto justo
 
-        } catch (closeError) {
-          console.error('[DESTROYER ERROR] Error en protocolo de clausura VIP:', closeError.message);
+            textoAnuncio += `\n\n_🔒 El chat permanecerá cerrado por 1 minuto para leer las actas presidenciales._`;
+
+            await sock.sendMessage(msg.chat, { text: textoAnuncio, mentions: vipKeiko.concat(vipSanchez) });
+
+            setTimeout(async () => {
+              try {
+                await sock.groupSettingUpdate(msg.chat, 'not_announcement');
+                await sock.sendMessage(msg.chat, { text: `🔓 *Gabinete Terminado:* El grupo ha sido reabierto. ¡Que empiece el debate!` });
+              } catch (openError) {
+                console.error('[DESTROYER ERROR] No se pudo reabrir el grupo:', openError.message);
+              }
+            }, 60000); // 1 minuto exacto
+
+          } catch (closeError) {
+            console.error('[DESTROYER ERROR] Error en protocolo de clausura VIP:', closeError.message);
+          }
+        } else {
+          console.log(`[DESTROYER MONITOR] Chat actual (${msg.chat}) no es el grupo VIP. Protocolo de clausura omitido con éxito.`);
         }
       }
 
