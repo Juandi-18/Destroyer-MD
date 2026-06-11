@@ -1,13 +1,26 @@
+# Dependencias locales (Se instalan por separado en PC y Termux)
 node_modules/
-Sessions/
+package-lock.json
+
+# Archivos temporales y descargas multimedia
 tmp/
+*.mp3
+*.mp4
+*.webp
+
+# Sesiones de WhatsApp (Evita que se crucen tus números)
+Sessions/
+session/
+auth_info/
+DestroyerSession/
+session-yuki/
 
 # Base de Datos SQLite (Ignorar archivo principal y temporales)
 core/database.db
 core/database.db-wal
 core/database.db-shm
 
-# Archivos basura del Sistema Operativo
+# Archivos basura del Sistema Operativo (Windows y Mac)
 .DS_Store
 Thumbs.db
 desktop.ini
