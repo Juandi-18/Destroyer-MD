@@ -78,7 +78,7 @@ apt update && apt upgrade && pkg install -y git nodejs ffmpeg imagemagick yarn
 
 > *3. Clonar repositorio e ingresar a la carpeta*
 ```bash
-git clone https://github.com/iamDestroy/YukiBot-MD
+git clone https://github.com/Juandi-18/Destroyer-MD
 ```
 
 ```bash
