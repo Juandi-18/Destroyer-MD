@@ -354,8 +354,8 @@ grupo: `» ˚୨•(=^●ω●^=)• ⊹ 𝐆𝐑𝐎𝐔𝐏𝐒 ⊹
 > Activar/desactivar comandos de economía.
 ✧ *$prefixgacha » $prefixrpg* [on | off]
 > Activar/desactivar comandos Gacha.
-✧ *$prefixnsfw* [on | off]
-> Activar/desactivar comandos NSFW.
+✧ *$prefixmodo* [sexo | chill]
+> Activar/desactivar el modo adulto / sexo.
 ✧ *$prefixonlyadmin » $prefixadminonly* [on | off]
 > Limitar comandos solo a administradores.
 ✧ *$prefixtag » $prefixhidetag » $prefixtagall* [texto]
@@ -365,7 +365,7 @@ grupo: `» ˚୨•(=^●ω●^=)• ⊹ 𝐆𝐑𝐎𝐔𝐏𝐒 ⊹
 ✧ *$prefixclear*
 > Limpiar usuarios inactivos del grupo.`,
 
-nsfw: `» ˚୨•(=^●ω●^=)• ⊹ 𝐍𝐒𝐅𝐖 ⊹
+modosexo: `» ˚୨•(=^●ω●^=)• ⊹ 𝐌𝐨𝐝𝐨 𝐀𝐝𝐮𝐥𝐭𝐨 / 𝐒𝐞𝐱𝐨 ⊹
 > ✐ Comandos para acceder a contenido exclusivo para adultos.
 
 ✧ *$prefixxnxx* [query | url]

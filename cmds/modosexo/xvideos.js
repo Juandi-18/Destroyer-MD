@@ -5,11 +5,15 @@ import db from '#db';
 
 export default {
   command: ["xvideos"],
-  category: 'nsfw',
-  description: 'Buscar y descargar videos de XVideos.',
+  category: 'modosexo',
+  description: 'Buscar y descargar videos de XVideos en modo adulto / sexo.',
   run: async ({ msg, sock, args, usedPrefix, command, text }) => {
     const chat = db.getChat(msg.chat);
-    if (!chat.nsfw) return msg.reply(`ꕥ El contenido *NSFW* está desactivado en este grupo.\n\nUn *administrador* puede activarlo con el comando:\n» *${usedPrefix}nsfw on*`);
+    const modoEnabled = chat.modosexo === 1 || chat.modosexo === true || chat.nsfw === 1 || chat.nsfw === true;
+    if (!modoEnabled) return msg.reply(`ꕥ El contenido de *Modo Sexo* está desactivado en este grupo.
+
+Un *administrador* puede activarlo con el comando:
+» *${usedPrefix}modo sexo*`);
     try {
       const query = args.join(" ");
       if (!query) return msg.reply("《✧》 Por favor, ingresa el título o URL del video de XVIDEOS.");

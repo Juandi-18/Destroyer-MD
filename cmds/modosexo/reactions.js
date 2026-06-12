@@ -80,11 +80,15 @@ const alias = {
 
 export default {
   command: ['anal','violar','cum','undress','encuerar','fuck','coger','spank','nalgada','lickpussy','fap','paja','grope','sixnine','69','suckboobs','grabboobs','blowjob','mamada','bj','boobjob','yuri','tijeras','footjob','cummouth','cumshot','handjob','lickass','lickdick','fingering','creampie','facesitting','deepthroat','thighjob','bondage','pegging','futanari','futa','yaoi','bukkake','orgy','orgia','squirt','squirting'],
-  category: 'nsfw',
-  description: 'Comandos de reacciones NSFW entre usuarios.',
+  category: 'modosexo',
+  description: 'Comandos de reacciones de modo adulto / sexo entre usuarios.',
   run: async ({ msg, sock, usedPrefix, command, participants }) => {
     const chat = db.getChat(msg.chat);
-    if (!chat.nsfw) return msg.reply(`ꕥ El contenido *NSFW* está desactivado en este grupo.\n\nUn *administrador* puede activarlo con el comando:\n» *${usedPrefix}nsfw on*`);
+    const modoEnabled = chat.modosexo === 1 || chat.modosexo === true || chat.nsfw === 1 || chat.nsfw === true;
+    if (!modoEnabled) return msg.reply(`ꕥ El contenido de *Modo Sexo* está desactivado en este grupo.
+
+Un *administrador* puede activarlo con el comando:
+» *${usedPrefix}modo sexo*`);
     const currentCommand = Object.keys(alias).find(key => alias[key].includes(command)) || command;
     if (!captions[currentCommand]) return;
     let who = msg.mentionedJid?.[0] || msg.quoted?.sender;
@@ -103,7 +107,7 @@ export default {
     try {
       const shares = './core/shares.json'
       const sharesData = JSON.parse(fs.readFileSync(shares))
-      const videos = sharesData.nsfw[currentCommand]
+      const videos = sharesData.modosexo[currentCommand]
       const randomVideo = videos[Math.floor(Math.random() * videos.length)];
       await sock.sendMessage(msg.chat, { video: { url: randomVideo }, gifPlayback: true, caption, mentions: [who, msg.sender] }, { quoted: msg });
     } catch (e) {

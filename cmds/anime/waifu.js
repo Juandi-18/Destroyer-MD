@@ -9,8 +9,8 @@ export default {
     try {
       await msg.react('🕒');
       const chat = db.getChat(msg.chat);
-      let mode = chat?.nsfw ? 'nsfw' : 'sfw';
-      let url = `https://nekos.best/api/v2/${command}${mode === 'nsfw' ? '?type=nsfw' : ''}`;
+      const nsfwEnabled = chat?.modosexo === true || chat?.modosexo === 1 || chat?.nsfw === true || chat?.nsfw === 1;
+      let url = `https://nekos.best/api/v2/${command}${nsfwEnabled ? '?type=nsfw' : ''}`;
       let res = await fetch(url);
       if (!res.ok) return;
       let json = await res.json();

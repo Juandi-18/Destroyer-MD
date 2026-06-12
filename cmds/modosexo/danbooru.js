@@ -3,12 +3,16 @@ import db from '#db';
 
 export default {
   command: ['danbooru', 'dbooru'],
-  category: 'nsfw',
-  description: 'Buscar imágenes en Danbooru.',
+  category: 'modosexo',
+  description: 'Buscar imágenes en Danbooru en modo adulto / sexo.',
   run: async ({ msg, sock, args, usedPrefix, command }) => {
     try {
       const chat = db.getChat(msg.chat);
-      if (!chat.nsfw) return msg.reply(`ꕥ El contenido *NSFW* está desactivado en este grupo.\n\nUn *administrador* puede activarlo con el comando:\n» *${usedPrefix}nsfw on*`)
+      const modoEnabled = chat.modosexo === 1 || chat.modosexo === true || chat.nsfw === 1 || chat.nsfw === true;
+      if (!modoEnabled) return msg.reply(`ꕥ El contenido de *Modo Sexo* está desactivado en este grupo.
+
+Un *administrador* puede activarlo con el comando:
+» *${usedPrefix}modo sexo*`)
       if (!args[0]) return sock.reply(msg.chat, `《✧》 Debes especificar tags para buscar\n> Ejemplo » *${usedPrefix + command} neko*`, msg)
       await msg.react('🕒')
       const tag = args[0].replace(/\s+/g, '_')

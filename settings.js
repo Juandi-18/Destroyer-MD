@@ -15,8 +15,8 @@ global.my = {
   ch1: '120363401404146384@newsletter'
 };
 
-// --- GRUPOS CON CATEGORÍA NSFW BLOQUEADA ---
-global.nsfwBlockedGroups = [
+// --- GRUPOS CON CATEGORÍA MODO SEXO BLOQUEADA ---
+global.modosexoBlockedGroups = [
   '51921532849-1517242067@g.us', 
   
   '120363428056235509@g.us'

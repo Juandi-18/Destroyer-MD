@@ -93,7 +93,7 @@ export default {
         alerts: chatData.alerts ? '✓ Activado' : '✘ Desactivado',
         gacha: chatData.gacha ? '✓ Activado' : '✘ Desactivado',
         economy: chatData.economy ? '✓ Activado' : '✘ Desactivado',
-        nsfw: chatData.nsfw ? '✓ Activado' : '✘ Desactivado',
+        modosexo: (chatData.modosexo === true || chatData.modosexo === 1 || chatData.nsfw === true || chatData.nsfw === 1) ? '✓ Activado' : '✘ Desactivado',
         adminmode: chatData.adminonly ? '✓ Activado' : '✘ Desactivado',
         botprimary: botprimary
       };
@@ -118,7 +118,7 @@ export default {
       message += `✐ Alertas › *${settings.alerts}*\n`;
       message += `✐ Gacha › *${settings.gacha}*\n`;
       message += `✐ Economía › *${settings.economy}*\n`;
-      message += `✐ Nsfw › *${settings.nsfw}*\n`;
+      message += `✐ Modo Sexo › *${settings.modosexo}*\n`;
       message += `✐ ModoAdmin › *${settings.adminmode}*`;
 
       const mentionOw = groupMetadata?.owner ? groupMetadata.owner : '';

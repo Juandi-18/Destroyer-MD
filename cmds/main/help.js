@@ -50,7 +50,7 @@ export default {
         economia: ['economia', 'economy', 'eco'],
         gacha: ['gacha', 'rpg'],
         grupo: ['grupo', 'group'],
-        nsfw: ['nsfw', '+18'],
+        modosexo: ['modosexo', 'sexmode', '+18'],
         profile: ['profile', 'perfil'],
         sockets: ['sockets', 'bots'],
         stickers: ['stickers', 'sticker'],
@@ -60,10 +60,10 @@ export default {
       // Clonamos el objeto de comandos original para no alterar el archivo base global
       const sections = { ...menuObject };
 
-      // --- FILTRADO DINÁMICO DE CATEGORÍA NSFW ---
-      if (global.nsfwBlockedGroups.includes(msg.chat)) {
-        delete alias.nsfw;      // Lo quitamos de la búsqueda por categoría individual (!menu nsfw)
-        delete sections.nsfw;   // Lo removemos del renderizado general del menú completo (!menu)
+      // --- FILTRADO DINÁMICO DE CATEGORÍA MODO SEXO ---
+      if (global.modosexoBlockedGroups.includes(msg.chat)) {
+        delete alias.modosexo;      // Lo quitamos de la búsqueda por categoría individual (!menu modosexo)
+        delete sections.modosexo;   // Lo removemos del renderizado general del menú completo (!menu)
       }
       // -----------------------------------------------------------
 

@@ -164,9 +164,9 @@ export default async (sock, msg) => {
 
   if (!users.stats) users.stats = {};
   if (!users.stats[today]) users.stats[today] = { msgs: 0, cmds: 0 };
-  // --- BLOQUEO TOTAL DE CATEGORÍA NSFW EN GRUPOS SELECCIONADOS ---
+  // --- BLOQUEO TOTAL DE CATEGORÍA MODO SEXO EN GRUPOS SELECCIONADOS ---
   const cmdDataCheck = global.comandos.get(command);
-  if (cmdDataCheck && cmdDataCheck.category === 'nsfw' && global.nsfwBlockedGroups.includes(from)) {
+  if (cmdDataCheck && cmdDataCheck.category === 'modosexo' && global.modosexoBlockedGroups.includes(from)) {
     return; // El bot se detiene por completo e ignora al usuario
   }
   // ----------------------------------------------------------------

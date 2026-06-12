@@ -88,6 +88,7 @@ export const defChat = {
   sWelcome: '',
   sGoodbye: '',
   nsfw: 0,
+  modosexo: 0,
   alerts: 1,
   gacha: 1,
   economy: 1,
@@ -153,6 +154,14 @@ export function initDB() {
   if (!existingUserColumns.includes('premiumTime')) {
     db.exec('ALTER TABLE users ADD COLUMN premiumTime INTEGER DEFAULT 0');
   }
+  const existingChatColumns = stmt("PRAGMA table_info(chats)").all().map((col) => col.name);
+  if (!existingChatColumns.includes('modosexo')) {
+    try {
+      db.exec('ALTER TABLE chats ADD COLUMN modosexo BOOLEAN DEFAULT 0');
+    } catch (e) {
+      console.error('Error adding modosexo column to chats table:', e);
+    }
+  }
   db.exec(`
     CREATE TABLE IF NOT EXISTS chats (
       id TEXT PRIMARY KEY,
@@ -162,6 +171,7 @@ export function initDB() {
       sWelcome TEXT DEFAULT '',
       sGoodbye TEXT DEFAULT '',
       nsfw BOOLEAN DEFAULT 0,
+      modosexo BOOLEAN DEFAULT 0,
       alerts BOOLEAN DEFAULT 1,
       gacha BOOLEAN DEFAULT 1,
       economy BOOLEAN DEFAULT 1,
@@ -256,8 +266,16 @@ export function getChat(id) {
   if (cached !== undefined) return cached;
   let chat = stmt('SELECT * FROM chats WHERE id = ?').get(id);
   if (!chat) {
-    stmt(`INSERT OR IGNORE INTO chats (id, isBanned, welcome, goodbye, sWelcome, sGoodbye, nsfw, alerts, gacha, economy, adminonly, primaryBot, antilinks, antistatus, rolls) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(id, defChat.isBanned, defChat.welcome, defChat.goodbye, defChat.sWelcome, defChat.sGoodbye, defChat.nsfw, defChat.alerts, defChat.gacha, defChat.economy, defChat.adminonly, defChat.primaryBot, defChat.antilinks, defChat.antistatus, defChat.rolls);
+    stmt(`INSERT OR IGNORE INTO chats (id, isBanned, welcome, goodbye, sWelcome, sGoodbye, nsfw, modosexo, alerts, gacha, economy, adminonly, primaryBot, antilinks, antistatus, rolls) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(id, defChat.isBanned, defChat.welcome, defChat.goodbye, defChat.sWelcome, defChat.sGoodbye, defChat.nsfw, defChat.modosexo, defChat.alerts, defChat.gacha, defChat.economy, defChat.adminonly, defChat.primaryBot, defChat.antilinks, defChat.antistatus, defChat.rolls);
     chat = stmt('SELECT * FROM chats WHERE id = ?').get(id);
+  }
+  if (chat) {
+    if (chat.modosexo === undefined && chat.nsfw !== undefined) {
+      chat.modosexo = chat.nsfw;
+    }
+    if (chat.modosexo === undefined) {
+      chat.modosexo = 0;
+    }
   }
   chat.rolls = parseJSON(chat.rolls, {});
   memCache.set(key, chat, CHAT_CACHE_TTL);
