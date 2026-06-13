@@ -10,7 +10,7 @@ let globalHookSet = false;
 export default {
   command: ['dijkstra', 'ruta', 'calcularruta'],
   category: 'owner',
-  description: 'Módulo de Dijkstra interactivo con inyección forzada de rutas para Termux y Windows.',
+  description: 'Módulo de Dijkstra interactivo con fusión de hilos forzada para Termux y Windows.',
   
   run: async ({ msg, sock, args, usedPrefix, command }) => {
     const chat = msg.chat;
@@ -19,7 +19,7 @@ export default {
     // 🔐 FILTRO DE SEGURIDAD
     const numeroOwner = '51982219982@s.whatsapp.net'; 
     if (sender !== numeroOwner) {
-      return await msg.reply('⚠️ *ACCESO DENEGADO:* Este comando es de prioridad científica y solo puede ser ejecutado por el desarrollador del bot.');
+      return await msg.reply('⚠️ *ACCESO DENEGADO:* This command is under scientific priority.');
     }
 
     if (!fs.existsSync('./tmp')) fs.mkdirSync('./tmp', { recursive: true });
@@ -200,13 +200,9 @@ async function handleInteractiveLoop(msg, sock, session, sessionKey) {
     const outputImg = path.join('./tmp', `mapa_${session.userRaw}.png`);
     const scriptPyPath = path.join('./tmp', `dijkstra_${session.userRaw}.py`);
 
-    // Inyección dinámica de código Python con Inyección Forzada de Rutas en Hardcode
+    // Inyección dinámica de código Python puro (sin alteraciones de sys.path)
     const pythonCode = `
 import sys
-# 🚀 FIX DE ENTORNO REFORZADO PARA TERMUX (FUSIÓN DE RUTAS DIRECTAS EN MOTOR)
-sys.path.append('/data/data/com.termux/files/usr/lib/python3.13/site-packages')
-sys.path.append('/data/data/com.termux/files/usr/lib/python3.11/site-packages')
-
 import pandas as pd
 import networkx as nx
 import matplotlib
@@ -275,18 +271,16 @@ if __name__ == '__main__': run()
     fs.writeFileSync(scriptPyPath, pythonCode, 'utf-8');
 
     // =========================================================================
-    // 🔥 ENLACE INTEGRAL DE ENTORNO EN TIEMPO DE EJECUCIÓN (FIX ABSOLUTO)
+    // ⚡ INYECTOR INLINE DE TRIPLE VÁLVULA (MÁXIMA PRIORIDAD OPERATIVA)
     // =========================================================================
     const isAndroid = process.platform === 'android' || process.platform === 'linux';
-    const pythonCommand = isAndroid ? 'python3' : 'python';
     
-    // Si corre en Termux, forzamos la herencia total de variables del sistema en Node
-    const execOptions = { encoding: 'utf-8', env: { ...process.env } };
-    if (isAndroid) {
-      execOptions.env.PYTHONPATH = "/data/data/com.termux/files/usr/lib/python3.13/site-packages:" + (execOptions.env.PYTHONPATH || "");
-    }
+    // Comando forzado unificado para Linux que inyecta la variable antes de invocar el ejecutable
+    const runCommand = isAndroid 
+      ? `PYTHONPATH=/data/data/com.termux/files/usr/lib/python3.13/site-packages python3 "${scriptPyPath}"`
+      : `python "${scriptPyPath}"`;
 
-    exec(`${pythonCommand} "${scriptPyPath}"`, execOptions, async (error, stdout, stderr) => {
+    exec(runCommand, { encoding: 'utf-8' }, async (error, stdout, stderr) => {
       if (fs.existsSync(scriptPyPath)) fs.unlinkSync(scriptPyPath);
 
       if (error || stderr) {
