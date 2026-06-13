@@ -10,7 +10,7 @@ let globalHookSet = false;
 export default {
   command: ['dijkstra', 'ruta', 'calcularruta'],
   category: 'owner',
-  description: 'Módulo de Dijkstra interactivo con control estricto de hilos y prevención de duplicados.',
+  description: 'Módulo de Dijkstra interactivo optimizado para VS Code y Termux.',
   
   run: async ({ msg, sock, args, usedPrefix, command }) => {
     const chat = msg.chat;
@@ -167,7 +167,7 @@ async function handleInteractiveLoop(msg, sock, session, sessionKey) {
         await sock.sendMessage(msg.chat, {
           document: { url: reportPath },
           mimetype: 'text/csv',
-          fileName: 'reporte_completo_dijkstra.csv', // 🌟 CAMBIADO DE .xlsx A .csv AQUÍ
+          fileName: 'reporte_completo_dijkstra.csv',
           caption: `🟢 *Excel Guardado Exitosamente (Modo Compacto)*\n\nSe consolidaron tus ${session.history.length} consultas en la bitácora ordenada local.`
         });
 
@@ -200,7 +200,7 @@ async function handleInteractiveLoop(msg, sock, session, sessionKey) {
     const outputImg = path.join('./tmp', `mapa_${session.userRaw}.png`);
     const scriptPyPath = path.join('./tmp', `dijkstra_${session.userRaw}.py`);
 
-    // Inyección de Python compactada y blindada de SyntaxErrors
+    // Inyección de Python compactada y corregida (len(nodos))
     const pythonCode = `
 import sys
 import pandas as pd
@@ -238,7 +238,6 @@ def run():
         pos = nx.kamada_kawai_layout(G)
         fig, ax = plt.subplots(figsize=(10, 7))
         
-        # Array de asignación lineal compactado y blindado
         colores = []
         for node in G.nodes():
             if node == "${origen}": colores.append("green")
@@ -271,7 +270,11 @@ if __name__ == '__main__': run()
 `;
     fs.writeFileSync(scriptPyPath, pythonCode, 'utf-8');
 
-    exec(`python "${scriptPyPath}"`, { encoding: 'utf-8' }, async (error, stdout, stderr) => {
+    // Detector dinámico de entorno
+    const isAndroid = process.platform === 'android' || process.platform === 'linux';
+    const pythonCommand = isAndroid ? 'python3' : 'python';
+
+    exec(`${pythonCommand} "${scriptPyPath}"`, { encoding: 'utf-8' }, async (error, stdout, stderr) => {
       if (fs.existsSync(scriptPyPath)) fs.unlinkSync(scriptPyPath);
 
       if (error || stderr) {
