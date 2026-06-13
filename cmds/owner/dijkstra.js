@@ -9,8 +9,8 @@ let globalHookSet = false;
 
 export default {
   command: ['dijkstra', 'ruta', 'calcularruta'],
-  category: 'group', // 🌟 Cambiado a categoría grupal para el informe de la universidad
-  description: 'Módulo de Dijkstra interactivo habilitado para el Desarrollador y Administradores.',
+  category: 'group',
+  description: 'Módulo de Dijkstra interactivo optimizado para Administradores con extractor de texto Termux Alpha.',
   
   run: async ({ msg, sock, args, usedPrefix, command }) => {
     const chat = msg.chat;
@@ -42,7 +42,7 @@ export default {
     if (!fs.existsSync('./tmp')) fs.mkdirSync('./tmp', { recursive: true });
     const sessionKey = `${chat}-${sender}`;
 
-    // 🔥 CONFIGURACIÓN DEL ESCUCHADOR TEMPORAL GLOBAL (BYPASS DE PREFIJOS)
+    // 🔥 CONFIGURACIÓN DEL ESCUCHADOR TEMPORAL GLOBAL (BYPASS DE PREFIJOS BLINDADO)
     if (!globalHookSet && sock.ev) {
       globalHookSet = true;
       sock.ev.on('messages.upsert', async ({ messages, type }) => {
@@ -50,11 +50,17 @@ export default {
         const mRaw = messages[0];
         if (!mRaw?.message || mRaw.key.fromMe) return;
 
-        // Extraer texto limpio
-        const txt = (mRaw.message.conversation || mRaw.message.extendedTextMessage?.text || '').trim();
+        // 🕵️‍♂️ EXTRACTOR MULTI-CAPA DE TEXTO (SOLUCIÓN CRÍTICA PARA TERMUX)
+        const msgContent = mRaw.message;
+        const txt = (
+          msgContent.conversation || 
+          msgContent.extendedTextMessage?.text || 
+          msgContent.imageMessage?.caption || 
+          ''
+        ).trim();
         
-        // 🔒 FILTRO ANTI-DUPLICADOS: Ignorar por completo si el mensaje empieza con un prefijo o comando
-        if (txt.startsWith('!') || txt.startsWith('.') || txt.toLowerCase().includes(command)) return;
+        // 🔒 FILTRO ANTI-DUPLICADOS: Ignorar si empieza con prefijos de comandos comunes
+        if (txt.startsWith('!') || txt.startsWith('.') || txt.startsWith('/') || txt.toLowerCase().includes(command)) return;
 
         const snd = mRaw.key.participant || mRaw.key.remoteJid;
         const cht = mRaw.key.remoteJid;
@@ -287,7 +293,7 @@ if __name__ == '__main__': run()
 `;
     fs.writeFileSync(scriptPyPath, pythonCode, 'utf-8');
 
-    // Mapeo adaptativo básico para ejecución en Host de PC estable
+    // Mapeo adaptativo básico para ejecución nativa en Host estable (PC)
     const isAndroid = process.platform === 'android' || process.platform === 'linux';
     const pythonCommand = isAndroid ? 'python3' : 'python';
 
