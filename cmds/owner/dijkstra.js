@@ -9,17 +9,34 @@ let globalHookSet = false;
 
 export default {
   command: ['dijkstra', 'ruta', 'calcularruta'],
-  category: 'owner',
-  description: 'Módulo de Dijkstra interactivo con fusión de hilos forzada para Termux y Windows.',
+  category: 'group', // 🌟 Cambiado a categoría grupal para el informe de la universidad
+  description: 'Módulo de Dijkstra interactivo habilitado para el Desarrollador y Administradores.',
   
   run: async ({ msg, sock, args, usedPrefix, command }) => {
     const chat = msg.chat;
     const sender = msg.sender;
+    const isGroup = chat.endsWith('@g.us');
 
-    // 🔐 FILTRO DE SEGURIDAD
+    // =========================================================================
+    // 🔐 FILTRO DE SEGURIDAD EXPANDIDO (OWNER + BOT + ADMINS)
+    // =========================================================================
     const numeroOwner = '51982219982@s.whatsapp.net'; 
-    if (sender !== numeroOwner) {
-      return await msg.reply('⚠️ *ACCESO DENEGADO:* This command is under scientific priority.');
+    const isOwner = sender === numeroOwner || msg.key?.fromMe;
+    
+    let isAdmin = false;
+    if (isGroup) {
+      try {
+        const groupMetadata = await sock.groupMetadata(chat);
+        const participants = groupMetadata.participants || [];
+        const userAdmin = participants.find(p => p.id === sender);
+        isAdmin = userAdmin && (userAdmin.admin === 'admin' || userAdmin.admin === 'superadmin');
+      } catch (e) {
+        console.error('Error al validar metadatos del grupo:', e);
+      }
+    }
+
+    if (!isOwner && !isAdmin) {
+      return await msg.reply('⚠️ *ACCESO DENEGADO:* Este comando científico requiere permisos de *Administrador* o ser el Desarrollador del bot.');
     }
 
     if (!fs.existsSync('./tmp')) fs.mkdirSync('./tmp', { recursive: true });
@@ -200,7 +217,7 @@ async function handleInteractiveLoop(msg, sock, session, sessionKey) {
     const outputImg = path.join('./tmp', `mapa_${session.userRaw}.png`);
     const scriptPyPath = path.join('./tmp', `dijkstra_${session.userRaw}.py`);
 
-    // Inyección dinámica de código Python puro (sin alteraciones de sys.path)
+    // Código Python Híbrido Estándar Limpio
     const pythonCode = `
 import sys
 import pandas as pd
@@ -270,17 +287,11 @@ if __name__ == '__main__': run()
 `;
     fs.writeFileSync(scriptPyPath, pythonCode, 'utf-8');
 
-    // =========================================================================
-    // ⚡ INYECTOR INLINE DE TRIPLE VÁLVULA (MÁXIMA PRIORIDAD OPERATIVA)
-    // =========================================================================
+    // Mapeo adaptativo básico para ejecución en Host de PC estable
     const isAndroid = process.platform === 'android' || process.platform === 'linux';
-    
-    // Comando forzado unificado para Linux que inyecta la variable antes de invocar el ejecutable
-    const runCommand = isAndroid 
-      ? `PYTHONPATH=/data/data/com.termux/files/usr/lib/python3.13/site-packages python3 "${scriptPyPath}"`
-      : `python "${scriptPyPath}"`;
+    const pythonCommand = isAndroid ? 'python3' : 'python';
 
-    exec(runCommand, { encoding: 'utf-8' }, async (error, stdout, stderr) => {
+    exec(`${pythonCommand} "${scriptPyPath}"`, { encoding: 'utf-8' }, async (error, stdout, stderr) => {
       if (fs.existsSync(scriptPyPath)) fs.unlinkSync(scriptPyPath);
 
       if (error || stderr) {
