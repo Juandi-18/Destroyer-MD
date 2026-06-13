@@ -200,9 +200,13 @@ async function handleInteractiveLoop(msg, sock, session, sessionKey) {
     const outputImg = path.join('./tmp', `mapa_${session.userRaw}.png`);
     const scriptPyPath = path.join('./tmp', `dijkstra_${session.userRaw}.py`);
 
-    // Inyección dinámica de código Python con el Fix del conteo de nodos
+    // Inyección dinámica de código Python con Inyección Forzada de Rutas en Hardcode
     const pythonCode = `
 import sys
+# 🚀 FIX DE ENTORNO REFORZADO PARA TERMUX (FUSIÓN DE RUTAS DIRECTAS EN MOTOR)
+sys.path.append('/data/data/com.termux/files/usr/lib/python3.13/site-packages')
+sys.path.append('/data/data/com.termux/files/usr/lib/python3.11/site-packages')
+
 import pandas as pd
 import networkx as nx
 import matplotlib
