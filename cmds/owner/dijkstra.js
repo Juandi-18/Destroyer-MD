@@ -10,7 +10,7 @@ let globalHookSet = false;
 export default {
   command: ['dijkstra', 'ruta', 'calcularruta'],
   category: 'owner',
-  description: 'Módulo de Dijkstra interactivo optimizado para VS Code y Termux.',
+  description: 'Módulo de Dijkstra interactivo con inyección forzada de rutas para Termux y Windows.',
   
   run: async ({ msg, sock, args, usedPrefix, command }) => {
     const chat = msg.chat;
@@ -200,7 +200,7 @@ async function handleInteractiveLoop(msg, sock, session, sessionKey) {
     const outputImg = path.join('./tmp', `mapa_${session.userRaw}.png`);
     const scriptPyPath = path.join('./tmp', `dijkstra_${session.userRaw}.py`);
 
-    // Inyección de Python compactada y corregida (len(nodos))
+    // Inyección dinámica de código Python con el Fix del conteo de nodos
     const pythonCode = `
 import sys
 import pandas as pd
@@ -270,11 +270,19 @@ if __name__ == '__main__': run()
 `;
     fs.writeFileSync(scriptPyPath, pythonCode, 'utf-8');
 
-    // Detector dinámico de entorno
+    // =========================================================================
+    // 🔥 ENLACE INTEGRAL DE ENTORNO EN TIEMPO DE EJECUCIÓN (FIX ABSOLUTO)
+    // =========================================================================
     const isAndroid = process.platform === 'android' || process.platform === 'linux';
     const pythonCommand = isAndroid ? 'python3' : 'python';
+    
+    // Si corre en Termux, forzamos la herencia total de variables del sistema en Node
+    const execOptions = { encoding: 'utf-8', env: { ...process.env } };
+    if (isAndroid) {
+      execOptions.env.PYTHONPATH = "/data/data/com.termux/files/usr/lib/python3.13/site-packages:" + (execOptions.env.PYTHONPATH || "");
+    }
 
-    exec(`${pythonCommand} "${scriptPyPath}"`, { encoding: 'utf-8' }, async (error, stdout, stderr) => {
+    exec(`${pythonCommand} "${scriptPyPath}"`, execOptions, async (error, stdout, stderr) => {
       if (fs.existsSync(scriptPyPath)) fs.unlinkSync(scriptPyPath);
 
       if (error || stderr) {
