@@ -21,7 +21,7 @@ for p in files:
     new = PATTERN.sub(lambda m: f"{m.group('indent')}{MODE_ENABLED}\n{m.group('indent')}{MESSAGE}{m.group('semi')}", text)
     if p.name == 'reactions.js':
         new = new.replace("category: 'nsfw'", "category: 'modosexo'")
-        new = new.replace("description: 'Comandos de reacciones NSFW entre usuarios.'", "description: 'Comandos de reacciones de modo adulto / sexo entre usuarios.'")
+        new = new.replace("description: 'Comandos de reacciones NSFW entre usuarios.'", "description: 'Comandos de reacciones de modo sexo entre usuarios.'")
     if new != text:
         p.write_text(new, encoding='utf-8')
         print(f'Patched {p.name}')

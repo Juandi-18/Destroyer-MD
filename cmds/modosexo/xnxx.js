@@ -6,7 +6,7 @@ import db from '#db';
 export default {
   command: ["xnxx"],
   category: 'modosexo',
-  description: 'Buscar y descargar videos de XNXX en modo adulto / sexo.',
+  description: 'Buscar y descargar videos de XNXX en modo sexo.',
   run: async ({ msg, sock, args, usedPrefix, command, text }) => {
     const chat = db.getChat(msg.chat);
     const modoEnabled = chat.modosexo === 1 || chat.modosexo === true || chat.nsfw === 1 || chat.nsfw === true;

@@ -81,7 +81,7 @@ const alias = {
 export default {
   command: ['anal','violar','cum','undress','encuerar','fuck','coger','spank','nalgada','lickpussy','fap','paja','grope','sixnine','69','suckboobs','grabboobs','blowjob','mamada','bj','boobjob','yuri','tijeras','footjob','cummouth','cumshot','handjob','lickass','lickdick','fingering','creampie','facesitting','deepthroat','thighjob','bondage','pegging','futanari','futa','yaoi','bukkake','orgy','orgia','squirt','squirting'],
   category: 'modosexo',
-  description: 'Comandos de reacciones de modo adulto / sexo entre usuarios.',
+  description: 'Comandos de reacciones de modo sexo entre usuarios.',
   run: async ({ msg, sock, usedPrefix, command, participants }) => {
     const chat = db.getChat(msg.chat);
     const modoEnabled = chat.modosexo === 1 || chat.modosexo === true || chat.nsfw === 1 || chat.nsfw === true;

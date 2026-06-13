@@ -4,7 +4,7 @@ import db from '#db';
 export default {
   command: ['danbooru', 'dbooru'],
   category: 'modosexo',
-  description: 'Buscar imágenes en Danbooru en modo adulto / sexo.',
+  description: 'Buscar imágenes en Danbooru en modo sexo.',
   run: async ({ msg, sock, args, usedPrefix, command }) => {
     try {
       const chat = db.getChat(msg.chat);

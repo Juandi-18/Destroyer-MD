@@ -41,7 +41,7 @@ export default {
       economy: 'los comandos de *Economía*',
       gacha: 'los comandos de *Gacha*',
       adminonly: 'el modo *Solo Admin*',
-      modosexo: 'los comandos de *Modo Adulto / Sexo*'
+      modosexo: 'los comandos de *Modo Sexo*'
     };
     const featureTitles = {
       antilinks: 'AntiEnlace',
@@ -72,18 +72,15 @@ export default {
     const titulo = featureTitles[normalizedKey] || normalizedKey;
     const types = messages[normalizedKey] || "";
     if (!stateArg) {
-      if (normalizedKey === 'modosexo') {
-        return msg.reply(`⚙️ *CONFIGURACIÓN DEL MÓDULO*\n\nPara cambiar el estado de este grupo usa:\n👉 *${usedPrefix}modo sexo* (Para activarlo)\n👉 *${usedPrefix}modo chill* (Para apagarlo)`);
-      }
       return sock.reply(msg.chat, `*✩ ${titulo} (✿❛◡❛)*\n\nꕥ Un administrador puede activar o desactivar ${nombreBonito} utilizando:\n\n● _Habilitar ›_ *${usedPrefix + normalizedKey} enable*\n● _Deshabilitar ›_ *${usedPrefix + normalizedKey} disable*\n\n❒ *Estado actual ›* ${estado}\n${types}`, msg);
     }
     if (normalizedKey === 'modosexo') {
-      if (!['sexo', 'modo sexo', 'chill', 'modo chill'].includes(stateArg)) {
-        return msg.reply('⚠️ Comando inválido. Escribe únicamente *modo sexo* o *modo chill*.');
+      if (!['sexo', 'modo sexo', 'chill', 'modo chill', 'on', 'enable', 'off', 'disable'].includes(stateArg)) {
+        return msg.reply('⚠️ Comando inválido. Escribe: *modo sexo*, *modo chill*, *enable* o *disable*.');
       }
     }
     const enabled = normalizedKey === 'modosexo'
-      ? ['sexo', 'modo sexo'].includes(stateArg)
+      ? ['sexo', 'modo sexo', 'on', 'enable'].includes(stateArg)
       : ['on', 'enable'].includes(stateArg);
     const newValue = enabled ? 1 : 0;
     if ((chatData[normalizedKey] === 1 && enabled) || (chatData[normalizedKey] === 0 && !enabled) || (chatData[normalizedKey] === true && enabled) || (chatData[normalizedKey] === false && !enabled)) {

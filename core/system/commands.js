@@ -355,7 +355,7 @@ grupo: `» ˚୨•(=^●ω●^=)• ⊹ 𝐆𝐑𝐎𝐔𝐏𝐒 ⊹
 ✧ *$prefixgacha » $prefixrpg* [on | off]
 > Activar/desactivar comandos Gacha.
 ✧ *$prefixmodo* [sexo | chill]
-> Activar/desactivar el modo adulto / sexo.
+> Activar/desactivar el modo sexo.
 ✧ *$prefixonlyadmin » $prefixadminonly* [on | off]
 > Limitar comandos solo a administradores.
 ✧ *$prefixtag » $prefixhidetag » $prefixtagall* [texto]
@@ -365,7 +365,151 @@ grupo: `» ˚୨•(=^●ω●^=)• ⊹ 𝐆𝐑𝐎𝐔𝐏𝐒 ⊹
 ✧ *$prefixclear*
 > Limpiar usuarios inactivos del grupo.`,
 
-modosexo: `» ˚୨•(=^●ω●^=)• ⊹ 𝐌𝐨𝐝𝐨 𝐀𝐝𝐮𝐥𝐭𝐨 / 𝐒𝐞𝐱𝐨 ⊹
+anime: `» ˚୨•(=^●ω●^=)• ⊹ 𝐀𝐍𝐈𝐌𝐄 ⊹
+> ✐ Comandos de reacciones y anime para interactuar con tus amigos.
+
+✧ *$prefixwaifu » $prefixneko*
+> Buscar una waifu aleatoria.
+✧ *$prefixship » $prefixpareja » $prefixshippear*
+> Calcula el porcentaje de amor entre dos personas.
+✧ *$prefixppcouple » $prefixppcp*
+> Generar imágenes para amistades o parejas.
+✧ *$prefixhug » $prefixabrazar* <mention>
+> Dar un abrazo a alguien.
+✧ *$prefixkiss » $prefixmuak* <mention>
+> Dar un beso a alguien.
+✧ *$prefixkisscheek* <mention>
+> Dar un beso en la mejilla.
+✧ *$prefixpat* <mention>
+> Acariciar tiernamente a alguien.
+✧ *$prefixslap* <mention>
+> Dar una bofetada a alguien.
+✧ *$prefixcry » $prefixllorar* <mention>
+> Llorar de tristeza.
+✧ *$prefixdance » $prefixbailar* <mention>
+> Bailar con alguien.
+✧ *$prefixlick » $prefixlamer* <mention>
+> Lamer a alguien.
+✧ *$prefixbite » $prefixmorder* <mention>
+> Morder a alguien.
+✧ *$prefixblush* <mention>
+> Sonrojarse de vergüenza.
+✧ *$prefixbonk* <mention>
+> Dar un golpe divertido en la cabeza.
+✧ *$prefixcuddle » $prefixacurrucar* <mention>
+> Acurrucarse con alguien.
+✧ *$prefixkill » $prefixmatar* <mention>
+> Matar a alguien en modo dramático.
+✧ *$prefixwave » $prefixsaludar* <mention>
+> Saludar con la mano.
+✧ *$prefixwink* <mention>
+> Guiñar un ojo coquetamente.
+✧ *$prefixsmile » $prefixsonreir* <mention>
+> Sonreír con alegría.
+✧ *$prefixsad » $prefixtriste* <mention>
+> Expresar tristeza o melancolía.
+✧ *$prefixhappy » $prefixfeliz* <mention>
+> Saltar de felicidad.
+✧ *$prefixangry » $prefixenojado* <mention>
+> Expresar enojo o furia.
+✧ *$prefixshy » $prefixtimido* <mention>
+> Sentir o expresar timidez.
+✧ *$prefixrun » $prefixcorrer* <mention>
+> Correr rápidamente.
+✧ *$prefixeat » $prefixnom » $prefixcomer* <mention>
+> Comer algo delicioso.
+✧ *$prefixpeek* <mention>
+> Espiar a alguien curioseando.
+✧ *$prefixcomfort* <mention>
+> Consolar a alguien que está triste.
+✧ *$prefixthinkhard* <mention>
+> Pensar muy intensamente en algo.
+✧ *$prefixcurious* <mention>
+> Mostrar curiosidad por alguien.
+✧ *$prefixsniff* <mention>
+> Olfatear a alguien con curiosidad.
+✧ *$prefixstare* <mention>
+> Mirar fijamente a alguien.
+✧ *$prefixtrip* <mention>
+> Tropezar accidentalmente con alguien.
+✧ *$prefixblowkiss* <mention>
+> Lanzar un beso al aire a alguien.
+✧ *$prefixsnuggle* <mention>
+> Acurrucarse dulcemente con alguien.
+✧ *$prefixsleep* <mention>
+> Dormir plácidamente con alguien.
+✧ *$prefixcold* <mention>
+> Tener mucho frío.
+✧ *$prefixsing* <mention>
+> Cantarle a alguien.
+✧ *$prefixtickle* <mention>
+> Hacer cosquillas a alguien.
+✧ *$prefixscream* <mention>
+> Gritar fuerte.
+✧ *$prefixpush* <mention>
+> Empujar a alguien.
+✧ *$prefixnope* <mention>
+> Decir que no o negarse rotundamente.
+✧ *$prefixjump* <mention>
+> Saltar de alegría con alguien.
+✧ *$prefixheat* <mention>
+> Sentir o tener mucho calor.
+✧ *$prefixgaming* <mention>
+> Jugar videojuegos con alguien.
+✧ *$prefixdraw* <mention>
+> Hacer un dibujo inspirado en alguien.
+✧ *$prefixcall* <mention>
+> Llamar por teléfono a alguien.
+✧ *$prefixseduce* <mention>
+> Intentar seducir a alguien.
+✧ *$prefixbath* <mention>
+> Bañar a alguien.
+✧ *$prefixbored* <mention>
+> Expresar aburrimiento.
+✧ *$prefixbleh* <mention>
+> Sacar la lengua y hacerle muecas a alguien.
+✧ *$prefiximpregnate* <mention>
+> Embarazar a alguien.
+✧ *$prefixbully* <mention>
+> Hacerle bullying a alguien.
+✧ *$prefixcoffee* <mention>
+> Tomar un café con alguien.
+✧ *$prefixclap* <mention>
+> Aplaudir por alguien.
+✧ *$prefixcringe* <mention>
+> Sentir pena ajena (cringe) por alguien.
+✧ *$prefixdrunk* <mention>
+> Estar borracho con alguien.
+✧ *$prefixdramatic* <mention>
+> Hacer un drama exagerado.
+✧ *$prefixhandhold* <mention>
+> Tomar de la mano a alguien.
+✧ *$prefixhighfive* <mention>
+> Chocar los cinco con alguien.
+✧ *$prefixlaugh* <mention>
+> Reírse o burlarse de alguien.
+✧ *$prefixlove* <mention>
+> Expresar amor o atracción por alguien.
+✧ *$prefixpout* <mention>
+> Hacer pucheros de enfado.
+✧ *$prefixpunch* <mention>
+> Darle un puñetazo a alguien.
+✧ *$prefixscared* <mention>
+> Estar asustado por alguien.
+✧ *$prefixsmoke* <mention>
+> Fumar tranquilamente con alguien.
+✧ *$prefixspit* <mention>
+> Escupirle a alguien.
+✧ *$prefixsmug* <mention>
+> Presumir frente a alguien.
+✧ *$prefixthink* <mention>
+> No poder dejar de pensar en alguien.
+✧ *$prefixstep* <mention>
+> Pisar a alguien.
+✧ *$prefixwalk* <mention>
+> Dar un paseo caminando con alguien.`,
+
+modosexo: `» ˚୨•(=^●ω●^=)• ⊹ 𝐌𝐨𝐝𝐨 𝐒𝐞𝐱𝐨 ⊹
 > ✐ Comandos para acceder a contenido exclusivo para adultos.
 
 ✧ *$prefixxnxx* [query | url]
@@ -377,58 +521,69 @@ modosexo: `» ˚୨•(=^●ω●^=)• ⊹ 𝐌𝐨𝐝𝐨 𝐀𝐝𝐮𝐥�
 ✧ *$prefixgelbooru » $prefixgbooru* [tag]
 > Buscar imágenes en Gelbooru.
 ✧ *$prefixrule34 » $prefixr34* [tag]
-> Buscar imágenes en Rule34.`,
-
-anime: `» ˚୨•(=^●ω●^=)• ⊹ 𝐀𝐍𝐈𝐌𝐄 ⊹
-> ✐ Comandos de reacciones y anime para interactuar con tus amigos.
-
-✧ *$prefixwaifu » $prefixneko*
-> Buscar una waifu aleatoria.
-✧ *$prefixship » $prefixpareja » $prefixshippear*
-> Buscar una waifu aleatoria.
-✧ *$prefixppcouple » $prefixppcp*
-> Generar imágenes para amistades o parejas.
-✧ *$prefixhug » $prefixabrazar* <mention>
-> Dar un abrazo.
-✧ *$prefixkiss » $prefixmuak* <mention>
-> Dar un beso.
-✧ *$prefixpat* <mention>
-> Acariciar a alguien.
-✧ *$prefixslap* <mention>
-> Dar una bofetada.
-✧ *$prefixcry » $prefixllorar* <mention>
-> Llorar.
-✧ *$prefixdance » $prefixbailar* <mention>
-> Bailar.
-✧ *$prefixlick » $prefixlamer* <mention>
-> Lamer a alguien.
-✧ *$prefixbite » $prefixmorder* <mention>
-> Morder a alguien.
-✧ *$prefixblush* <mention>
-> Sonrojarse.
-✧ *$prefixbonk* <mention>
-> Dar un golpe divertido.
-✧ *$prefixcuddle » $prefixacurrucar* <mention>
-> Acurrucarse.
-✧ *$prefixkill » $prefixmatar* <mention>
-> Matar a alguien en modo dramático.
-✧ *$prefixwave » $prefixsaludar* <mention>
-> Saludar con la mano.
-✧ *$prefixwink* <mention>
-> Guiñar un ojo.
-✧ *$prefixsmile » $prefixsonreir* <mention>
-> Sonreír.
-✧ *$prefixsad » $prefixtriste* <mention>
-> Expresar tristeza.
-✧ *$prefixhappy » $prefixfeliz* <mention>
-> Saltar de felicidad.
-✧ *$prefixangry » $prefixenojado* <mention>
-> Estar enojado.
-✧ *$prefixshy » $prefixtimido* <mention>
-> Sentir timidez.
-✧ *$prefixrun » $prefixcorrer* <mention>
-> Correr.
-✧ *$prefixeat » $prefixnom » $prefixcomer* <mention>
-> Comer algo delicioso.
-✧ *Y más reacciones...*`,
+> Buscar imágenes en Rule34.
+✧ *$prefixanal* <mention>
+> Folla a alguien por el ano.
+✧ *$prefixcum* <mention>
+> Se viene dentro de alguien.
+✧ *$prefixundress* <mention>
+> Le quita la ropa a alguien.
+✧ *$prefixfuck* <mention>
+> Folla salvajemente a alguien.
+✧ *$prefixspank* <mention>
+> Le da una nalgada a alguien.
+✧ *$prefixlickpussy* <mention>
+> Le lame el coño a alguien.
+✧ *$prefixfap* <mention>
+> Se masturba pensando en alguien.
+✧ *$prefixgrope* <mention>
+> Manosea a alguien sin permiso.
+✧ *$prefixsixnine* <mention>
+> Hace un 69 con alguien.
+✧ *$prefixsuckboobs* <mention>
+> Le chupa las tetas a alguien.
+✧ *$prefixgrabboobs* <mention>
+> Le agarra las tetas a alguien.
+✧ *$prefixblowjob* <mention>
+> Le da una mamada a alguien.
+✧ *$prefixboobjob* <mention>
+> Le hace una rusa a alguien.
+✧ *$prefixfootjob* <mention>
+> Le hace una paja con los pies a alguien.
+✧ *$prefixyuri* <mention>
+> Hace tijeras con otra chica.
+✧ *$prefixcummouth* <mention>
+> Llena la boca de alguien con su leche.
+✧ *$prefixcumshot* <mention>
+> Correse encima de alguien.
+✧ *$prefixhandjob* <mention>
+> Le hace una paja a alguien.
+✧ *$prefixlickass* <mention>
+> Le lame el culo a alguien.
+✧ *$prefixlickdick* <mention>
+> Le lame la polla a alguien.
+✧ *$prefixfingering* <mention>
+> Le mete los dedos a alguien.
+✧ *$prefixcreampie* <mention>
+> Termina dentro de alguien sin avisar.
+✧ *$prefixfacesitting* <mention>
+> Se sienta en la cara de alguien.
+✧ *$prefixdeepthroat* <mention>
+> Le hace una garganta profunda a alguien.
+✧ *$prefixthighjob* <mention>
+> Frote entre los muslos de alguien.
+✧ *$prefixbondage* <mention>
+> Ata y amordaza a alguien.
+✧ *$prefixpegging* <mention>
+> Folla por detrás a alguien con un strapon.
+✧ *$prefixfutanari* <mention>
+> Folla con su parte masculina a alguien.
+✧ *$prefixyaoi* <mention>
+> Tiene un encuentro intenso con otro chico.
+✧ *$prefixbukkake* <mention>
+> Invita a otros a correrse encima de alguien.
+✧ *$prefixorgy* <mention>
+> Organiza una orgía con alguien.
+✧ *$prefixsquirting* <mention>
+> Hace que alguien se corra a chorros.`,
 }

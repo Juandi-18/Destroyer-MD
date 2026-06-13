@@ -4,7 +4,7 @@ import db from '#db';
 export default {
   command: ['gelbooru', 'gbooru'],
   category: 'modosexo',
-  description: 'Buscar imágenes en Gelbooru en modo adulto / sexo.',
+  description: 'Buscar imágenes en Gelbooru en modo sexo.',
   run: async ({ msg, sock, args, usedPrefix, command }) => {
     try {
       const chat = db.getChat(msg.chat);

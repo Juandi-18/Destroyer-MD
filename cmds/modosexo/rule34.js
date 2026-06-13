@@ -4,7 +4,7 @@ import db from '#db';
 export default {
   command: ['r34', 'rule34', 'rule'],
   category: 'modosexo',
-  description: 'Buscar imágenes en Rule34 en modo adulto / sexo.',
+  description: 'Buscar imágenes en Rule34 en modo sexo.',
   run: async ({ msg, sock, args, usedPrefix, command }) => {
     try {
       const chat = db.getChat(msg.chat);
