@@ -33,76 +33,28 @@ function normalizePhone(input) {
   return s;
 }
 
-export async function startSubBot(msg, client, caption = '', isCode = false, phone = '', chatId = '', isCommand = false) {
+export async function startSubBot(msg, client, caption = '', isCode = false, phone = '', chatId = '', isCommand = false, forceType = null) {
   const id = phone || (msg?.sender || '').split('@')[0];
   
-  // Validar que el id no sea vacío ni "undefined"
   if (!id || id === 'undefined' || id.length < 2) {
     console.error(chalk.red(`[ ERROR ] ID inválido para Sub-Bot: "${id}". Se requiere un número válido.`));
     return null;
   }
+
+  if (global.loadingBots) global.loadingBots.add(id);
   
-  // Detección dinámica de la jerarquía según los metadatos del usuario
   const user = db.getUser(msg?.sender || id + '@s.whatsapp.net');
-  const isPremiumUser = user?.premiumTime && user.premiumTime > Date.now();
+  const hasTokenUser = !!db.getActiveTokenByUser(id);
+  const isPremiumUser = (user?.tokenExpires && user.tokenExpires > Date.now()) || hasTokenUser;
   const senderId = msg?.sender || id + '@s.whatsapp.net';
 
   const premiumFolder = `./Sessions/Premium/${id}`;
   const subsFolder = `./Sessions/Subs/${id}`;
-  let carpetaDestino = isPremiumUser ? 'Premium' : 'Subs';
+  let carpetaDestino = forceType ? forceType : (isPremiumUser ? 'Premium' : 'Subs');
   let sessionFolder = `./Sessions/${carpetaDestino}/${id}`;
-
-  // si el usuario es premium pero su sesión todavía está en Subs, migrar automáticamente
-  if (isPremiumUser && fs.existsSync(subsFolder) && !fs.existsSync(premiumFolder)) {
-    try {
-      fs.mkdirSync(path.dirname(premiumFolder), { recursive: true });
-      fs.renameSync(subsFolder, premiumFolder);
-      console.log(chalk.gray(`[ ✿ ] Sesión migrada automáticamente Subs → Premium: ${id}`));
-    } catch (error) {
-      console.error('[ auto-migrate Subs→Premium ] Error:', error);
-      const copyDirSync = (src, dest) => {
-        fs.mkdirSync(dest, { recursive: true });
-        fs.readdirSync(src).forEach((file) => {
-          const srcFile = path.join(src, file);
-          const destFile = path.join(dest, file);
-          if (fs.statSync(srcFile).isDirectory()) copyDirSync(srcFile, destFile);
-          else fs.copyFileSync(srcFile, destFile);
-        });
-      };
-      copyDirSync(subsFolder, premiumFolder);
-      fs.rmSync(subsFolder, { recursive: true, force: true });
-      console.log(chalk.gray(`[ ✿ ] Sesión copiada automáticamente Subs → Premium: ${id}`));
-    }
-    sessionFolder = premiumFolder;
-  }
-
-  // si el usuario ya no es premium pero su sesión está en Premium, degradarla automáticamente
-  if (!isPremiumUser && fs.existsSync(premiumFolder) && !fs.existsSync(subsFolder)) {
-    try {
-      fs.mkdirSync(path.dirname(subsFolder), { recursive: true });
-      fs.renameSync(premiumFolder, subsFolder);
-      console.log(chalk.gray(`[ ✿ ] Sesión migrada automáticamente Premium → Subs: ${id}`));
-    } catch (error) {
-      console.error('[ auto-migrate Premium→Subs ] Error:', error);
-      const copyDirSync = (src, dest) => {
-        fs.mkdirSync(dest, { recursive: true });
-        fs.readdirSync(src).forEach((file) => {
-          const srcFile = path.join(src, file);
-          const destFile = path.join(dest, file);
-          if (fs.statSync(srcFile).isDirectory()) copyDirSync(srcFile, destFile);
-          else fs.copyFileSync(srcFile, destFile);
-        });
-      };
-      copyDirSync(premiumFolder, subsFolder);
-      fs.rmSync(premiumFolder, { recursive: true, force: true });
-      console.log(chalk.gray(`[ ✿ ] Sesión copiada automáticamente Premium → Subs: ${id}`));
-    }
-    sessionFolder = subsFolder;
-  }
 
   if (!fs.existsSync(sessionFolder)) fs.mkdirSync(sessionFolder, { recursive: true });
 
-  // Guardar metadato para prevenir confusión de credenciales
   const metadataFile = path.join(sessionFolder, 'metadata.json');
   if (!fs.existsSync(metadataFile)) {
     fs.writeFileSync(metadataFile, JSON.stringify({
@@ -154,7 +106,16 @@ export async function startSubBot(msg, client, caption = '', isCode = false, pho
     try { if (msgCode && socks.client && socks.chatId) { await socks.client.sendMessage(socks.chatId, { delete: msgCode.key }); msgCode = null; } } catch {}
   };
 
-  socks.ev.on('creds.update', saveCreds);
+  socks.ev.on('creds.update', async () => {
+    try {
+      if (fs.existsSync(sessionFolder)) {
+        await saveCreds();
+      }
+    } catch (e) {
+      console.error('[ ✿ ] Error controlado en creds.update (guardado evitado):', e.message);
+    }
+  });
+
   socks.decodeJid = (jid) => {
     if (!jid) return jid;
     if (/:\d+@/gi.test(jid)) {
@@ -197,26 +158,27 @@ export async function startSubBot(msg, client, caption = '', isCode = false, pho
       const settings = db.getSettings(botDir) || {};
       const nuevoTipo = carpetaDestino === 'Premium' ? 'Premium' : 'Sub';
 
-      // SOLO actualizamos la base de datos si el tipo de bot cambió realmente
       if (settings.type !== nuevoTipo) {
         try {
           db.setSettings(botDir, 'type', nuevoTipo);
         } catch (e) { console.error('[ ✿ ] Error actualizando settings:', e); }
       }
       
-      // Evitar entradas duplicadas y logs repetidos al reconectar/revivir sockets
       if (!Array.isArray(global.conns)) global.conns = [];
       const existingIndexByFolder = global.conns.findIndex((c) => c && c.sessionFolder === socks.sessionFolder);
       const existingIndexByUser = global.conns.findIndex((c) => c && c.userId === socks.userId);
       let didLog = false;
+      
       if (existingIndexByFolder !== -1) {
         if (global.conns[existingIndexByFolder] !== socks) {
+          try { global.conns[existingIndexByFolder].isReplacing = true; } catch (e) {}
           try { global.conns[existingIndexByFolder]?.ws?.close?.(); } catch {}
           global.conns[existingIndexByFolder] = socks;
           didLog = true;
         }
       } else if (existingIndexByUser !== -1) {
         if (global.conns[existingIndexByUser] !== socks) {
+          try { global.conns[existingIndexByUser].isReplacing = true; } catch (e) {}
           try { global.conns[existingIndexByUser]?.ws?.close?.(); } catch {}
           global.conns[existingIndexByUser] = socks;
           didLog = true;
@@ -225,6 +187,7 @@ export async function startSubBot(msg, client, caption = '', isCode = false, pho
         global.conns.push(socks);
         didLog = true;
       }
+      if (global.loadingBots) global.loadingBots.delete(socks.userId || id);
       delete reintentos[socks.userId || id];
       if (didLog) {
         const connectionLabel = carpetaDestino === 'Premium' ? 'BOT-PREMIUM' : 'SUB-BOT';
@@ -249,7 +212,10 @@ export async function startSubBot(msg, client, caption = '', isCode = false, pho
     
     if (connection === 'close') {
       const botId = socks.userId || id;
-      const reason = lastDisconnect?.error?.output?.statusCode || lastDisconnect?.reason || 0;
+      const statusCode = lastDisconnect?.error?.output?.statusCode || lastDisconnect?.error?.output?.payload?.statusCode || lastDisconnect?.reason || 0;
+      const errorMessage = lastDisconnect?.error?.message || 'Sin mensaje de error';
+      
+      console.log(chalk.bgMagenta.white.bold(' DEBUG SUB-BOT '), chalk.magenta(`[${id}] Cierre detectado. Código: ${statusCode} | Mensaje: ${errorMessage}`));
 
       const cleanupOldConn = () => {
         const index = global.conns.findIndex((c) => c && c.sessionFolder === socks.sessionFolder);
@@ -257,14 +223,13 @@ export async function startSubBot(msg, client, caption = '', isCode = false, pho
           global.conns.splice(index, 1);
           console.log(chalk.gray(`[ ✿ ] Sub-Bot ${botId} removido de conexiones activas.`));
         }
-        // NUEVO: Limpiar también de global.loadingBots
         if (global.loadingBots) {
           global.loadingBots.delete(botId);
           global.loadingBots.delete(socks.userId);
         }
       };
 
-      if (socks.isLoggingOut || socks.isReloading) {
+      if (socks.isLoggingOut || socks.isReloading || socks.isReplacing) {
         cleanupOldConn();
         delete reintentos[botId];
         await limpiarMensajesVinculacion();
@@ -280,24 +245,57 @@ export async function startSubBot(msg, client, caption = '', isCode = false, pho
         return;
       }
 
-      if ([401, 403].includes(reason)) {
-        reintentos[botId] = (reintentos[botId] || 0) + 1;
-        if (reintentos[botId] <= 5) {
-          console.log(chalk.gray(`[ ✿  ]  SUB-BOT ${botId} Desautenticado (${reason}), intento ${reintentos[botId]}/5...`));
-          setTimeout(() => startSubBot(msg, getClient(client), caption, isCode, phone, chatId, isCommand), 8000);
-        } else {
-          console.log(chalk.gray(`[ ✿  ]  SUB-BOT ${botId} Falló permanentemente (${reason}). Limpiando sesión.`));
-          delete reintentos[botId];
-          cleanupOldConn();
-          await limpiarMensajesVinculacion();
-          if (fs.existsSync(sessionFolder)) {
-            setTimeout(() => {
-              try {
-                fs.rmSync(sessionFolder, { recursive: true, force: true });
-                console.log(chalk.gray(`[ ✿ ] Sesión fallida eliminada: ${sessionFolder}`));
-              } catch (e) { console.error(`[ ✿  ] No se pudo eliminar ${sessionFolder}:`, e); }
-            }, 3000);
+      // 1. MANEJO DE CONFLICTO REAL O STREAM DAÑADO CRÍTICO (440)
+      if (statusCode === 440 || errorMessage.toLowerCase().includes('conflict')) {
+        console.log(chalk.yellowBright(`[ ✿ ] SUB-BOT ${botId} detectó conflicto real (${statusCode}). Limpiando sesión física y RAM.`));
+        cleanupOldConn();
+        
+        if (fs.existsSync(sessionFolder)) {
+          try {
+            fs.rmSync(sessionFolder, { recursive: true, force: true });
+            console.log(chalk.gray(`[ ✿ ] Carpeta de sesión eliminada por conflicto real: ${sessionFolder}`));
+          } catch (e) {
+            console.error(`[ ✿ ] Error eliminando carpeta en conflicto:`, e);
           }
+        }
+        return;
+      }
+
+      // 2. MANEJO DE REINICIO CONTROLADO (515 - RESTART REQUIRED / STREAM ERRORED NO CRÍTICO)
+      if (statusCode === 515 || errorMessage.toLowerCase().includes('restart required') || errorMessage.toLowerCase().includes('stream errored')) {
+        console.log(chalk.cyanBright(`[ ✿ ] SUB-BOT ${botId} requiere reinicio controlado (${statusCode}). Reintentando conexión en 5s sin borrar archivos físicos.`));
+        cleanupOldConn();
+        
+        // No borramos la carpeta física para permitir que Baileys termine de procesar las credenciales
+        setTimeout(() => startSubBot(msg, getClient(client), caption, isCode, phone, chatId, isCommand), 5000);
+        return;
+      }
+
+      // 3. MANEJO DE DESAUTENTICACIÓN REAL (401 / LOGGED OUT)
+      if (statusCode === DisconnectReason.loggedOut || statusCode === 401) {
+        const isAwaitingAuth = !socks.user?.id;
+
+        if (isAwaitingAuth || socks.isCommand) {
+          console.log(chalk.yellowBright(`[ ✿ ] DEBUG SUB-BOT [${id}] Ignorando borrado 401: Sesión en vinculación activa.`));
+          return;
+        }
+
+        if (!socks.isReplacing && !socks.isReloading) {
+          console.log(chalk.redBright(`[ ✿ ] SUB-BOT ${id} Desautenticado (401) real. Limpiando recursos de forma segura...`));
+          try { delete reintentos[botId]; } catch (e) {}
+          try { cleanupOldConn(); } catch (e) { console.error('[cleanupOldConn] ', e); }
+          try { await limpiarMensajesVinculacion(); } catch (e) { /* ignore */ }
+
+          if (fs.existsSync(sessionFolder)) {
+            try {
+              fs.rmSync(sessionFolder, { recursive: true, force: true });
+              console.log(chalk.gray(`[ ✿ ] Sesión eliminada permanentemente por desvinculación real: ${sessionFolder}`));
+            } catch (e) {
+              console.error(`[ ✿ ] No se pudo eliminar ${sessionFolder}:`, e);
+            }
+          }
+        } else {
+          console.log(chalk.yellowBright(`[ ✿ ] SUB-BOT ${id} Ignorando borrado físico 401 debido a inicialización/reemplazo controlado.`));
         }
         return;
       }
@@ -346,37 +344,176 @@ function msToTime(ms) {
 export default {
   command: ['code', 'qr', 'codepremium', 'qrpremium'],
   category: 'socket',
-  description: 'Gestionar bots subbots tradicionales y Premium.',
+  description: 'Gestionar bots subbots tradicionales y Tokens.',
   run: async ({ msg, sock, args, usedPrefix, command, __dirname }) => {
     const mainBotJid = global.sock?.user?.id?.split(':')[0] + '@s.whatsapp.net';
     const currentBotJid = sock.user.id.split(':')[0] + '@s.whatsapp.net';
     const isRunningOnSubBot = currentBotJid !== mainBotJid;
 
     const user = db.getUser(msg.sender);
-    const isPremium = user.premiumTime && user.premiumTime > Date.now();
-    let isPremiumRequest = /premium/i.test(command);
+    const tokenCommands = ['codetoken', 'qrtoken', 'codepremium', 'qrpremium'];
+    const isTokenRequest = tokenCommands.includes(command);
 
-    // --- REGLAS DE RESTRICCIÓN DE JERARQUÍA ---
-    if (isRunningOnSubBot) {
-      const basePath = 'Sessions';
-      const numberId = sock.user.id.split(':')[0];
-      const isCurrentBotPremium = fs.existsSync(path.join(basePath, 'Premium', numberId));
+    // --- 1. DETERMINAR ID OBJETIVO REAL ---
+    const fullArgs = args.join(' ').trim();
+    const separatorIndex = fullArgs.search(/[|•\/]/);
+    const rawArg = separatorIndex === -1 ? fullArgs : fullArgs.slice(separatorIndex + 1).trim();
+    const senderNumeric = msg.sender.split('@')[0];
 
-      if (isCurrentBotPremium) {
-        if (!isPremiumRequest) {
-          return sock.reply(msg.chat, `👑 Al ser usuario de un *Bot Premium*, tus invitaciones se generan automáticamente en calidad Alta Gama. Por favor, usa exclusivamente: *${usedPrefix}codepremium* o *${usedPrefix}qrpremium*.`, msg);
-        }
-      } else {
-        if (isPremiumRequest) {
-          return sock.reply(msg.chat, `❌ Los *SubBots Normales* no tienen autorización para emitir credenciales de Alta Gama. Ese comando es exclusivo del Bot Principal.`, msg);
-        }
-      }
-    } else {
-      if (isPremiumRequest && !isPremium) {
-        return sock.reply(msg.chat, `❌ No tienes una suscripción *Premium* activa. Ponte en contacto con el Owner para adquirir tu pase 👑.`, msg);
-      }
+    const isOwner = (() => {
+      if (!global.owner) return false;
+      if (typeof global.owner === 'string') return global.owner === msg.sender;
+      if (Array.isArray(global.owner)) return global.owner.includes(msg.sender);
+      return false;
+    })();
+
+    let id = normalizePhone(senderNumeric) || senderNumeric;
+    if (rawArg && isOwner) {
+      const provided = normalizePhone(rawArg);
+      if (provided) id = provided;
     }
 
+    const phone = id;
+    const mainBotNumber = global.sock?.user?.id?.split(':')[0];
+
+    // --- CANDADO 1: DETECTAR SI EL OBJETIVO ES EL BOT PRINCIPAL GLOBAL ---
+    if (id === mainBotNumber) {
+      return sock.reply(msg.chat, `👑 *[BOT PRINCIPAL]* 👑\n\nEste número es el Bot Principal (Owner) del sistema global. No puedes solicitar códigos de emparejamiento para él.`, msg);
+    }
+
+    // --- CANDADO 2: COMPROBACIÓN FÍSICA Y EN MEMORIA DE RANGOS ---
+    const pathSub = path.join('Sessions', 'Subs', id);
+    const pathPremium = path.join('Sessions', 'Premium', id);
+    const hasRealSub = fs.existsSync(pathSub) && fs.existsSync(path.join(pathSub, 'creds.json'));
+    const hasRealPremium = fs.existsSync(pathPremium) && fs.existsSync(path.join(pathPremium, 'creds.json'));
+
+    const isPremiumActive = Array.isArray(global.conns)
+      ? global.conns.some(c => c && c.userId === id && c.botType === 'Premium') || hasRealPremium
+      : hasRealPremium;
+
+    if (isPremiumActive) {
+      return sock.reply(msg.chat, `⚠️ *[SESIÓN PREMIUM ACTIVA]* ⚠️\n\nTeniendo una sesión activa e iniciada como Premium no puedes volver a solicitar un código de vinculación.`, msg);
+    }
+
+    // --- CANDADO 3: RESTRICCIÓN DE INSTANCIAS CLONES PARA TOKENS ---
+    if (isRunningOnSubBot && isTokenRequest) {
+      return sock.reply(msg.chat, `❌ Los *SubBots* no están autorizados para iniciar el proceso de vinculación por Token. Usa únicamente: *${usedPrefix}code* o *${usedPrefix}qr*.`, msg);
+    }
+
+    const isSubActive = Array.isArray(global.conns)
+      ? global.conns.some(c => c && c.userId === id && c.botType === 'Sub') || hasRealSub
+      : hasRealSub;
+
+    if (isSubActive && !isTokenRequest) {
+      return sock.reply(msg.chat, `⚠️ *[SESIÓN SUB-BOT ACTIVA]* ⚠️\n\nTu número ya está conectado como un Sub-Bot Normal. Si deseas subir al rango Premium, debes adquirir un Token y usar '${usedPrefix}codepremium', pero no puedes pedir un código básico de nuevo.`, msg);
+    }
+
+    const phone = id;
+    const mainBotNumber = global.sock?.user?.id?.split(':')[0];
+
+    // --- FILTRO 3: DETECTAR SI EL OBJETIVO ES EL BOT PRINCIPAL ---
+    if (id === mainBotNumber) {
+      return sock.reply(msg.chat, `👑 *[BOT PRINCIPAL]* 👑\n\nEste número es el Bot Principal (Owner) del sistema global. No puedes solicitar códigos de emparejamiento para él.`, msg);
+    }
+
+    // --- CANDADO GLOBAL 2: COMPROBACIÓN FÍSICA REAL DE SESIONES ---
+    const pathSub = path.join('Sessions', 'Subs', id);
+    const pathPremium = path.join('Sessions', 'Premium', id);
+    const hasRealSub = fs.existsSync(pathSub) && fs.existsSync(path.join(pathSub, 'creds.json'));
+    const hasRealPremium = fs.existsSync(pathPremium) && fs.existsSync(path.join(pathPremium, 'creds.json'));
+
+    const isPremiumActive = Array.isArray(global.conns)
+      ? global.conns.some(c => c && c.userId === id && c.botType === 'Premium') || hasRealPremium
+      : hasRealPremium;
+    const isSubActive = Array.isArray(global.conns)
+      ? global.conns.some(c => c && c.userId === id && c.botType === 'Sub') || hasRealSub
+      : hasRealSub;
+
+    // A) Si ya es Premium activo, bloquear cualquier comando de vinculación (.code o .codepremium)
+    if (isPremiumActive) {
+      return sock.reply(msg.chat, `⚠️ *[SESIÓN PREMIUM ACTIVA]* ⚠️\n\nTeniendo una sesión activa e iniciada como Premium no puedes volver a solicitar un código de vinculación.`, msg);
+    }
+
+    // B) Si es un Sub-Bot normal activo, bloquear '.code' pero PERMITIR '.codepremium' para la migración
+    if (isSubActive && !isTokenRequest) {
+      return sock.reply(msg.chat, `⚠️ *[SESIÓN SUB-BOT ACTIVA]* ⚠️\n\nTu número ya está conectado como un Sub-Bot Normal. Si deseas subir al rango Premium, debes adquirir un Token y usar '${usedPrefix}codepremium', pero no puedes pedir un código básico de nuevo.`, msg);
+    }
+
+    // --- FLUJO EXCLUSIVO PARA PETICIONES PREMIUM ---
+    if (isTokenRequest) {
+      if (isRunningOnSubBot) {
+        return sock.reply(msg.chat, `❌ Los *SubBots* no están autorizados para iniciar el proceso de vinculación por Token. Usa únicamente: *${usedPrefix}code* o *${usedPrefix}qr*.`, msg);
+      }
+
+      // Exigir token físico como argumento obligatorio
+      const providedToken = args[0] || '';
+      if (!providedToken) {
+        return sock.reply(msg.chat, `⚠️ *[TOKEN REQUERIDO]* ⚠️\n\nPara migrar tu subconexión al rango Premium, es obligatorio que ingreses el token físico al lado del comando.\n\n*Uso correcto:* .codepremium [TU-TOKEN]\n*Ejemplo:* .codepremium ABCD-1234`, msg);
+      }
+
+      const subsSessionDir = path.join('Sessions', 'Subs', id);
+      const premiumSessionDir = path.join('Sessions', 'Premium', id);
+      const hasSubsSession = fs.existsSync(subsSessionDir) && fs.readdirSync(subsSessionDir).length > 0;
+      const hasPremiumSession = fs.existsSync(premiumSessionDir) && fs.readdirSync(premiumSessionDir).length > 0;
+      const tokenErrorTemplate = `「✿」Si ya tienes un token premium, puedes registrar un sub-bot premium usando los comandos:\n\n❒ ${usedPrefix}qrpremium [Token]\n❒ ${usedPrefix}codepremium [Token]\n\n> ✰ REGLA DE CONEXIÓN: Para conectar a Premium, primero debes registrar un sub-bot normal para que el sistema genere y guarde todas tus claves, códigos y credenciales base. Luego, podrás activar el Token de 30 días que te dio el Owner.\n\n> ✰ Para obtener un token, debes pedirle a un owner.`;
+
+      if (!hasSubsSession && !hasPremiumSession) {
+        return sock.reply(msg.chat, tokenErrorTemplate, msg);
+      }
+
+      const tokenRecord = db.getTokenRecord(providedToken.toUpperCase());
+      if (!tokenRecord || tokenRecord.active !== 1 || tokenRecord.expiresAt <= Date.now() || tokenRecord.userId !== id) {
+        return sock.reply(msg.chat, tokenErrorTemplate, msg);
+      }
+
+      const successMessage = "👑 *¡ACCESO PREMIUM DETECTADO CON ÉXITO!* 👑\n\nTu token ha sido verificado en la base de datos de |𝔇ĕ𝐬†𝓻⊙γ𒆜. El sistema está cerrando tu sesión gratuita de forma segura para migrarte al canal Premium de alto rendimiento. Por favor, espera unos segundos a que se complete el reinicio.";
+      await sock.reply(msg.chat, successMessage, msg);
+
+      try {
+        const subsDir = subsSessionDir;
+        const premDir = premiumSessionDir;
+
+        let activeIndex = -1;
+        if (Array.isArray(global.conns)) {
+          activeIndex = global.conns.findIndex((c) => c && (c.userId === id || (c.sessionFolder && (c.sessionFolder.endsWith(path.join('Subs', id)) || c.sessionFolder.endsWith(path.join('Sessions', path.join('Subs', id)))))));
+        }
+
+        if (activeIndex !== -1) {
+          const activeConn = global.conns[activeIndex];
+          try {
+            const notifyJid = activeConn.chatId || `${id}@s.whatsapp.net`;
+            const notification = {
+              text: "🚀 *[NOTIFICACIÓN DEL SISTEMA]* 🚀\n\n¡Tu subconexión ha sido promovida al rango *Premium* con éxito! El sistema cerrará este canal gratuito en este milisegundo para inicializar tu motor de alto rendimiento. No es necesario que vuelvas a escanear ni a pedir código; tus credenciales se mantendrán intactas. Espera 5 segundos..."
+            };
+            if (activeConn.client && notifyJid) {
+              await activeConn.client.sendMessage(notifyJid, notification, { mentions: [id + '@s.whatsapp.net'] }).catch(() => {});
+              await new Promise((res) => setTimeout(res, 2000));
+            }
+          } catch (e) {
+            console.error('[Token Migration] Error sending shutdown notification:', e);
+          }
+          try { activeConn.isReloading = true; } catch (e) {}
+          try { activeConn.ws?.close?.(); } catch (e) {}
+          try { global.conns.splice(activeIndex, 1); } catch (e) {}
+        }
+
+        await new Promise((res) => setTimeout(res, 1500));
+
+        if (fs.existsSync(subsDir)) {
+          fs.mkdirSync(path.dirname(premDir), { recursive: true });
+          fs.renameSync(subsDir, premDir);
+          try { db.setSettings(`${id}@s.whatsapp.net`, 'type', 'Premium'); } catch (e) {}
+          await startSubBot(null, null, '', false, id, '', false, 'Premium');
+        } else {
+          await startSubBot(null, null, '', false, id, '', false, 'Premium');
+        }
+      } catch (e) {
+        console.error('[Token Migration] Error:', e);
+      }
+      return;
+    }
+
+    // --- CONTINUACIÓN DEL FLUJO NORMAL (SOLO SI PASÓ TODOS LOS CANDADOS) ---
     if (!isPremium) {
       db.setCreate('users', msg.sender, 'Subs', 0);
       const lastRequest = user.Subs || 0;
@@ -400,18 +537,34 @@ export default {
     const rtx = '`✤` Vincula tu *SubBot Normal* usando el *código.*\n\n> ✥ Sigue las *instrucciones*\n\n*›* Click en los *3 puntos*\n*›* Toque *dispositivos vinculados*\n*›* Vincular *nuevo dispositivo*\n*›* Selecciona *Vincular con el número de teléfono*\n\n⚠️ *`Nota`*: Este clon gratuito tendrá comandos de descargas e IA deshabilitados.';
     const rtx2 = '`✤` Vincula tu *SubBot Normal* usando *código qr.*\n\n*›* Dispositivos vinculados ➜ Escanear QR.\n⚠️ *`Nota`*: Este clon gratuito tendrá comandos de descargas e IA deshabilitados.';
     
-    const rtxPremium = '`👑 SUBCONEXIÓN PREMIUM 👑`\n\nVincula tu *Bot Espejo de Alta Gama* usando el *código.*\n\n> ✧ *¡Beneficios Premium Activos!* ➜ Acceso ilimitado a todos los comandos de descargas (YouTube, TikTok, Facebook, adult), herramientas de Inteligencia Artificial avanzadas, respuestas más veloces y libre de Cooldown.';
-    const rtx2Premium = '`👑 SUBCONEXIÓN PREMIUM 👑`\n\nEscanea el código *QR* generado para activar tu *Bot Espejo con Acceso Absoluto* sin restricciones.';
+    const rtxToken = '`👑 SUBCONEXIÓN TOKEN 👑`\n\nVincula tu *Bot Espejo con Token* usando el *código.*\n\n> ✧ *¡Beneficios de Token Activos!* ➜ Acceso ilimitado a todos los comandos de descargas (YouTube, TikTok, Facebook, adult), herramientas de Inteligencia Artificial avanzadas, respuestas más veloces y libre de Cooldown.';
+    const rtx2Token = '`👑 SUBCONEXIÓN TOKEN 👑`\n\nEscanea el código *QR* generado para activar tu *Bot Espejo con Acceso Absoluto* sin restricciones.';
 
     const isCode = /code/i.test(command);
     const isCommand = true;
-    const caption = isPremiumRequest ? (isCode ? rtxPremium : rtx2Premium) : (isCode ? rtx : rtx2);
-    
-    const fullArgs = args.join(' ');
-    const separatorIndex = fullArgs.search(/[|•\/]/);
-    const rawPhone = separatorIndex === -1 ? fullArgs.trim() : fullArgs.slice(separatorIndex + 1).trim();
-    const phone = normalizePhone(rawPhone || msg.sender.split('@')[0]);
-    
+    const caption = isTokenRequest ? (isCode ? rtxToken : rtx2Token) : (isCode ? rtx : rtx2);
+
+    try {
+      if (Array.isArray(global.conns)) {
+        const oldIndex = global.conns.findIndex(c => c && c.userId === id);
+        if (oldIndex !== -1) {
+          try { global.conns[oldIndex].isReloading = true; } catch (e) {}
+          try { global.conns[oldIndex].ws?.close?.(); } catch (e) {}
+          global.conns.splice(oldIndex, 1);
+        }
+      }
+    } catch (e) { /* ignore */ }
+
+    try {
+      const botJid = id + '@s.whatsapp.net';
+      const existingSettings = db.getSettings(botJid) || {};
+      try { db.getSettings(botJid); } catch (e) {}
+      try { db.setSettings(botJid, 'type', isTokenRequest ? 'Premium' : 'Sub'); } catch (e) {}
+      if (!existingSettings.owner) {
+        try { db.setSettings(botJid, 'owner', msg.sender); } catch (e) {}
+      }
+    } catch (e) { /* ignore */ }
+
     await startSubBot(msg, sock, caption, isCode, phone, msg.chat, isCommand);
     
     if (!isPremium) {

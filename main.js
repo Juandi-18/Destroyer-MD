@@ -40,11 +40,15 @@ function getCachedSessionBots() {
 export default async (sock, msg) => {
 
   if (msg.fromMe && !msg.key.participant && msg.isBot) return;  
-  const sender = msg.sender;
+  // Normalizar msg.sender para remover el :0 o :N que Baileys añade al Bot Principal
+  let sender = msg.sender;
+  if (sender && sender.includes(':')) {
+    sender = sender.replace(/:\d+@/g, '@');
+  }
   let body = msg.body || '';
   
   const from = msg.key.remoteJid;
-  const botJid = sock.user.id.split(':')[0] + '@s.whatsapp.net';
+  let botJid = sock.user.id.split(':')[0] + '@s.whatsapp.net';
   const chat = db.getChat(msg.chat);
   const settings = db.getSettings(botJid);
   const user = db.getUser(sender);
@@ -179,8 +183,8 @@ export default async (sock, msg) => {
     return msg.reply(`ꕤ El comando *${command}* no existe.\n✎ Usa *${usedPrefix}help* para ver la lista de comandos disponibles.`);
   }
 
-  // 1. Verificar si el usuario que ejecuta el comando es Premium de forma legítima
-  const isPremiumUser = user.premiumTime && user.premiumTime > Date.now();
+  // 1. Verificar si el usuario que ejecuta el comando tiene Token activo de forma legítima
+  const isPremiumUser = (user.tokenExpires && user.tokenExpires > Date.now()) || !!db.getActiveTokenByUser(sender.split('@')[0]);
 
   // 2. RESTRICCIÓN DE COMANDOS PARA SUBBOTS NORMALES
   // Si el bot que está respondiendo es un SubBot (tipo 'Sub') y el usuario NO es Premium
@@ -199,7 +203,7 @@ export default async (sock, msg) => {
     ];
 
     if (blacklistedCommands.includes(command)) {
-      return msg.reply(`⚠️ El comando *${usedPrefix + command}* está deshabilitado para los *SubBots Normales*.\n\n👑 ¡Adquiere el rango *Premium* usando *${usedPrefix}codepremium* para desbloquear todas las funciones sin restricciones!`);
+      return msg.reply(`⚠️ El comando *${usedPrefix + command}* está deshabilitado para los *SubBots Normales*.\n\n👑 Para obtener acceso Premium temporal, solicita un *Token* a un Owner.`);
     }
   }
   // -----------------------------------------------------------

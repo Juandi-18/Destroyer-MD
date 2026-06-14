@@ -197,11 +197,11 @@ sockets: `» ˚୨•(=^●ω●^=)• ⊹ 𝐒𝐎𝐂𝐊𝐄𝐓𝐒 ⊹
 ✧ *$prefixqr » $prefixcode*
 > Crear un Sub-Bot con un código.
 ✧ *$prefixcodepremium » $prefixqrpremium*
-> Crear un Bot Premium con un código.
-✧ *$prefixaddpremium » $prefixdarpremium* <mention | number> [días]
-> Dar días Premium a un usuario.
-✧ *$prefixremovepremium » $prefixquitarpremium* <mention | number>
-> Quitar el Premium de un usuario.
+> Registrar un Sub-Bot usando un Token (Tokens son válidos 30 días).
+✧ *$prefixdartoken* <mention | number>
+> Generar un Token de acceso (30 días) para un usuario.
+✧ *$prefixquitartoken* <mention | number>
+> Invalidar el Token de un usuario inmediatamente.
 ✧ *$prefixreload*
 > Recargar la sesión del bot.
 ✧ *$prefixsetname » $prefixsetbotname* [nombre]

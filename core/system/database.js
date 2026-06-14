@@ -76,7 +76,7 @@ export const defUser = {
   marry: '',
   genre: '',
   birth: '',
-  premiumTime: 0, // <-- NUEVA PROPIEDAD: 0 significa que no es Premium
+  tokenExpires: 0, // <-- NUEVA PROPIEDAD: 0 significa que no tiene Token activo
   metadatos: null,
   metadatos2: null
 };
@@ -134,6 +134,7 @@ export const defStickerPack = {
 };
 
 export function initDB() {
+  // 1. Crear primero la tabla de usuarios si no existe
   db.exec(`
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
@@ -146,22 +147,23 @@ export function initDB() {
       marry TEXT DEFAULT '',
       genre TEXT DEFAULT '',
       birth TEXT DEFAULT '',
-      premiumTime INTEGER DEFAULT 0,
+      tokenExpires INTEGER DEFAULT 0,
       metadatos TEXT,
       metadatos2 TEXT
     )`);
+
   const existingUserColumns = stmt("PRAGMA table_info(users)").all().map((col) => col.name);
-  if (!existingUserColumns.includes('premiumTime')) {
-    db.exec('ALTER TABLE users ADD COLUMN premiumTime INTEGER DEFAULT 0');
+  if (!existingUserColumns.includes('tokenExpires')) {
+    db.exec('ALTER TABLE users ADD COLUMN tokenExpires INTEGER DEFAULT 0');
   }
-  const existingChatColumns = stmt("PRAGMA table_info(chats)").all().map((col) => col.name);
-  if (!existingChatColumns.includes('modosexo')) {
+  // Compatibilidad: si la tabla antigua tiene premiumTime, copiar a tokenExpires
+  if (existingUserColumns.includes('premiumTime') && !existingUserColumns.includes('tokenExpires')) {
     try {
-      db.exec('ALTER TABLE chats ADD COLUMN modosexo BOOLEAN DEFAULT 0');
-    } catch (e) {
-      console.error('Error adding modosexo column to chats table:', e);
-    }
+      db.exec('ALTER TABLE users ADD COLUMN tokenExpires INTEGER DEFAULT 0');
+    } catch {}
   }
+
+  // 2. Crear primero la tabla de chats de forma segura
   db.exec(`
     CREATE TABLE IF NOT EXISTS chats (
       id TEXT PRIMARY KEY,
@@ -181,6 +183,18 @@ export function initDB() {
       antistatus BOOLEAN DEFAULT 0,
       rolls TEXT DEFAULT '{}'
     )`);
+
+  // 3. ¡AHORA SÍ! Una vez creada la tabla, verificamos de forma segura la columna del parche modosexo
+  const existingChatColumns = stmt("PRAGMA table_info(chats)").all().map((col) => col.name);
+  if (!existingChatColumns.includes('modosexo')) {
+    try {
+      db.exec('ALTER TABLE chats ADD COLUMN modosexo BOOLEAN DEFAULT 0');
+    } catch (e) {
+      console.error('Error adding modosexo column to chats table:', e);
+    }
+  }
+
+  // 4. Crear el resto de tablas complementarias del sistema
   db.exec(`
     CREATE TABLE IF NOT EXISTS chat_users (
       chat_id TEXT,
@@ -198,6 +212,7 @@ export function initDB() {
       stats TEXT DEFAULT '{}',
       PRIMARY KEY (chat_id, user_id)
     )`);
+
   db.exec(`
     CREATE TABLE IF NOT EXISTS settings (
       id TEXT PRIMARY KEY,
@@ -205,7 +220,7 @@ export function initDB() {
       prefix TEXT DEFAULT '[\"/\",\"!\",\".\",\"#\"]',
       commandsejecut INTEGER DEFAULT 0,
       newsletter_id TEXT DEFAULT '120363401404146384@newsletter',
-      nameid TEXT DEFAULT 'ೃ࿔ ყµҡเ ωαɓσƭร - σƒƒเ૮เαℓ ૮ɦαɳɳεℓ .ೃ࿐',
+      nameid TEXT DEFAULT 'ೃ࿔ ყµҡเ ωαɓσƭร - σƒƒเ૮αℓ ૮ɦαɳɳεℓ .ೃ࿐',
       type TEXT DEFAULT 'Owner',
       link TEXT DEFAULT 'https://discord.gg/q7hCyhJyZ8',
       banner TEXT DEFAULT 'https://cdn.adoolab.xyz/dl/c0d8325f.jpeg', 
@@ -215,14 +230,27 @@ export function initDB() {
       botname TEXT DEFAULT 'Destroyer',
       owner TEXT DEFAULT ''
     )`);
+
   try {
     db.exec(`UPDATE settings SET banner = '${defSets.banner}' WHERE banner IS NULL OR banner = '' OR banner = 'https://static.wikia.nocookie.net/solo-leveling/images/b/b4/Solo_Leveling_Side_Stories.jpg'`);
     db.exec(`UPDATE settings SET link = '${defSets.link}' WHERE link IS NULL OR link = '' OR link = 'https://discord.gg/T8hGgZq8n'`);
   } catch (e) {
     console.error("Error al actualizar el banner/link en la base de datos:", e);
   }
+
   db.exec(`CREATE TABLE IF NOT EXISTS characters (id TEXT PRIMARY KEY, data TEXT)`);
   db.exec(`CREATE TABLE IF NOT EXISTS sticker_packs (id TEXT PRIMARY KEY, packs TEXT DEFAULT '[]')`);
+  
+  // Tabla para tokens del sistema Premium de 30 días
+  db.exec(`CREATE TABLE IF NOT EXISTS tokens (
+    token TEXT PRIMARY KEY,
+    userId TEXT,
+    ownerId TEXT,
+    createdAt INTEGER,
+    expiresAt INTEGER,
+    active INTEGER DEFAULT 1,
+    notified INTEGER DEFAULT 0
+  )`);
 }
 
 export function getUser(id, opt = {}) {
@@ -242,10 +270,10 @@ export function getUser(id, opt = {}) {
   if (cached !== undefined) return cached;
   let user = stmt('SELECT * FROM users WHERE id = ?').get(id);
   if (!user) {
-    stmt(`INSERT OR IGNORE INTO users (id, name, exp, level, usedcommands, pasatiempo, description, marry, genre, birth, premiumTime, metadatos, metadatos2) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(id, defUser.name, defUser.exp, defUser.level, defUser.usedcommands, defUser.pasatiempo, defUser.description, defUser.marry, defUser.genre, defUser.birth, defUser.premiumTime, defUser.metadatos, defUser.metadatos2);
+    stmt(`INSERT OR IGNORE INTO users (id, name, exp, level, usedcommands, pasatiempo, description, marry, genre, birth, tokenExpires, metadatos, metadatos2) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(id, defUser.name, defUser.exp, defUser.level, defUser.usedcommands, defUser.pasatiempo, defUser.description, defUser.marry, defUser.genre, defUser.birth, defUser.tokenExpires, defUser.metadatos, defUser.metadatos2);
     user = stmt('SELECT * FROM users WHERE id = ?').get(id);
   }
-  if (user.premiumTime === undefined || user.premiumTime === null) user.premiumTime = 0;
+    if (user.tokenExpires === undefined || user.tokenExpires === null) user.tokenExpires = 0;
   if (user.metadatos) { try { user.metadatos = JSON.parse(user.metadatos); } catch {} }
   if (user.metadatos2) { try { user.metadatos2 = JSON.parse(user.metadatos2); } catch {} }
   memCache.set(key, user, USER_CACHE_TTL);
@@ -413,6 +441,55 @@ export function setStickersPack(id, field, val) {
   return stmt(`UPDATE sticker_packs SET ${field} = ? WHERE id = ?`).run(toStore(val), id);
 }
 
+// --- Token management ---
+export function createToken(token, userId, ownerId, expiresAt) {
+  const createdAt = Date.now();
+  try {
+    stmt('INSERT OR REPLACE INTO tokens (token, userId, ownerId, createdAt, expiresAt, active, notified) VALUES (?, ?, ?, ?, ?, 1, 0)').run(token, userId, ownerId, createdAt, expiresAt);
+    return true;
+  } catch (e) {
+    console.error('[DB createToken] ', e);
+    return false;
+  }
+}
+
+export function getTokenRecord(token) {
+  if (!token) return null;
+  const row = stmt('SELECT * FROM tokens WHERE token = ?').get(token);
+  return row || null;
+}
+
+export function getActiveTokenByUser(userId) {
+  if (!userId) return null;
+  const row = stmt('SELECT * FROM tokens WHERE userId = ? AND active = 1 ORDER BY createdAt DESC LIMIT 1').get(userId);
+  return row || null;
+}
+
+export function invalidateToken(token) {
+  if (!token) return false;
+  try {
+    const res = stmt('UPDATE tokens SET active = 0 WHERE token = ?').run(token);
+    return res.changes > 0;
+  } catch (e) { return false; }
+}
+
+export function invalidateTokensByUser(userId) {
+  if (!userId) return false;
+  try {
+    const res = stmt('UPDATE tokens SET active = 0 WHERE userId = ?').run(userId);
+    return res.changes > 0;
+  } catch (e) { return false; }
+}
+
+export function getExpiredUnnotifiedTokens(now = Date.now()) {
+  return stmt('SELECT * FROM tokens WHERE active = 1 AND expiresAt <= ? AND notified = 0').all(now) || [];
+}
+
+export function markTokenNotified(token) {
+  try { stmt('UPDATE tokens SET notified = 1 WHERE token = ?').run(token); return true; } catch { return false; }
+}
+
+
 export function deletedb(type, ...ids) {
   if (!type || !ids || ids.length === 0) return false;
   switch (type) {
@@ -569,4 +646,6 @@ export function clearDB() {
 }
 
 
-export default { initDB, getUser, setUser, getChat, setChat, getChatUser, setChatUser, getSettings, setSettings, getCharacter, setCharacter, getStickersPack, setStickersPack, deletedb, setCreate, clearCache, clearDB, db };
+export default { initDB, getUser, setUser, getChat, setChat, getChatUser, setChatUser, getSettings, setSettings, getCharacter, setCharacter, getStickersPack, setStickersPack, deletedb, setCreate, clearCache, clearDB, db,
+  // token helpers
+  createToken, getTokenRecord, getActiveTokenByUser, invalidateToken, invalidateTokensByUser, getExpiredUnnotifiedTokens, markTokenNotified };

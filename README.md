@@ -251,3 +251,40 @@ Links originales
 
 ### 💐 Propietario de esta version
 [![King](https://github.com/Juandi-18.png?size=120)](https://github.com/Juandi-18)
+
+---
+
+## 🔐 Tokens (acceso Premium temporal)
+
+Se ha migrado el antiguo sistema "Premium" a un sistema de **Tokens** de acceso temporales (30 días) administrados por Owners.
+
+- `!dartoken @usuario` — Genera y envía un Token (formato ABCD-1234) válido 30 días. No acumulable.
+- `!quitartoken <TOKEN|@usuario>` — Revoca un Token por código o por usuario.
+- `#qrpremium <TOKEN>` — En el Bot Principal, comando para vincular silenciosamente un Sub-Bot usando un Token válido.
+- `#codepremium <TOKEN>` — Igual que `#qrpremium`, alternativa por código.
+
+Ejemplos:
+
+1) Owner genera token para +573001112233:
+
+```text
+!dartoken 573001112233
+```
+
+2) Usuario recibe token y lo usa en el Bot Principal:
+
+```text
+#qrpremium ABCD-1234
+```
+
+3) Owner revoca un token:
+
+```text
+!quitartoken ABCD-1234
+```
+
+Notas:
+
+- Los comandos públicos para vincular siguen siendo `#qrpremium` y `#codepremium` (se mantiene compatibilidad con clientes existentes).
+- Internamente los tokens se guardan en la base de datos (`tokens`) y se validan al intentar la vinculación.
+- Las carpetas `Sessions/Premium` se mantienen sin renombrar para compatibilidad con Sub-Bots ya existentes.
