@@ -73,7 +73,7 @@ export default {
           'canonical-url': targetLink,
           'matched-text': targetLink,
           title: botname,
-          description: `${namebot}, mᥲძᥱ ᥕі𝗍һ ᑲᥡ ⁱᵃᵐ|𝔇ĕ𝐬†𝓻⊙γ𒆜`,
+          description: `${namebot}, mᥲძᥱ ᥕі𝗍һ ᑲᥡ |𝔇ĕ𝐬†𝓻⊙γĕ𝓻𒆜`,
           jpegThumbnail: imageMessage?.jpegThumbnail ? Buffer.from(imageMessage.jpegThumbnail) : undefined,
           highQualityThumbnail: imageMessage || undefined
         }))) : undefined,

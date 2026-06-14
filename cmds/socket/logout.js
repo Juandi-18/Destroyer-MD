@@ -33,8 +33,13 @@ export default {
       await sock.logout();
       setTimeout(() => {
         if (fs.existsSync(sessionPath)) {
-          fs.rmSync(sessionPath, { recursive: true, force: true });
-          console.log(`《✧》 Sesión de ${cleanId} eliminada de ${sessionPath}`);
+          if (botType === 'Premium') {
+            console.log(`《✧》 Sesión Premium de ${cleanId} desconectada de la RAM. Los archivos físicos permanecen intactos en el disco.`);
+          } else {
+            // Si es un Sub gratuito normal, sí se borra por completo de la faz de la tierra
+            fs.rmSync(sessionPath, { recursive: true, force: true });
+            console.log(`《✧》 Sesión de SubBot ${cleanId} eliminada por completo de ${sessionPath}`);
+          }
         }
       }, 5000);
     } catch (e) {

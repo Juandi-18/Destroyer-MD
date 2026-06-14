@@ -113,7 +113,7 @@ export default {
             'canonical-url': targetLink,
             'matched-text': targetLink,
             title: displayBotName,
-            description: `${botSettings.namebot || 'Bot'}, mᥲძᥱ ᥕі𝗍һ ᑲᥡ ⁱᵃᵐ|𝔇ĕ𝐬†𝓻⊙γ𒆜`,
+            description: `${botSettings.namebot || 'Bot'}, mᥲძᥱ ᥕі𝗍һ ᑲᥡ |𝔇ĕ𝐬†𝓻⊙γĕ𝓻𒆜`,
             jpegThumbnail: imageMessage?.jpegThumbnail ? Buffer.from(imageMessage.jpegThumbnail) : undefined,
             highQualityThumbnail: imageMessage || undefined
           }))) : undefined,

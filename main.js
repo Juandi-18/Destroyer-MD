@@ -127,6 +127,17 @@ export default async (sock, msg) => {
 
   if (!match) return;
   if (msg.isCommands) return;
+
+  // --- RESTRICCIÓN DE PRIVACIDAD ABSOLUTA PARA CHATS INDIVIDUALES ---
+  if (!msg.isGroup) {
+    const senderJid = msg.sender;
+    const isOwnerSender = (global.owner || []).map(n => n + '@s.whatsapp.net').includes(senderJid);
+    const isMainBotSender = senderJid === botJid;
+    if (!isOwnerSender && !isMainBotSender) {
+      return; // Ignorar silenciosamente
+    }
+  }
+
   let usedPrefix = (match[0] || [])[0] || '';
   let args = msg.text.slice(usedPrefix.length).trim().split(" ");
   let command = customCmd ?? (args.shift() || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -159,7 +170,7 @@ export default async (sock, msg) => {
   if (!isROwner && settings.self) return;
   if (msg.chat && !msg.chat.endsWith('g.us')) {
     const cmds = ['allmenu', 'help', 'menu', 'infobot', 'botinfo', 'invite', 'invitar', 'ping', 'speed', 'p', 'status', 'estado', 'report', 'reporte', 'sug', 'suggest', 'token', 'join', 'unir', 'logout', 'reload', 'self', 'setbanner', 'setbotbanner', 'setchannel', 'setbotchannel', 'setbotcurrency', 'setcurrency', 'seticon', 'setboticon', 'setlink', 'setbotlink', 'setbotname', 'setname', 'setbotowner', 'setowner', 'setimage', 'setpfp', 'setprefix', 'setbotprefix', 'setstatus', 'setusername', 'code', 'qr', 'codepremium', 'qrpremium', 'codemod', 'qrmod'];
-    if (!isOwner && !cmds.includes(command)) return;
+    if (!isOwner && !cmds.includes(command) && !['dartoken', 'quitartoken'].includes(command)) return;
   }
   if (chat?.isBanned && !(command === 'bot' && text === 'on') && !isOwner) {
     await msg.reply(`ꕥ El bot *${settings.botname || 'Destroyer'}* está desactivado en este grupo.\n\n> ✎ Un *administrador* puede activarlo con el comando:\n> » *${usedPrefix}bot on*`);
@@ -211,6 +222,11 @@ export default async (sock, msg) => {
 
   if (cmdData.isOwner && !isROwner) {
     if (settings.prefix === 1) return;
+
+    // Si el intruso intenta usar la gestión de tokens, le arrojamos el cartel estético oficial de denegación
+    if (['dartoken', 'quitartoken'].includes(command)) {
+      return msg.reply(`❌ *[ACCESO DENEGADO]* ❌\n\nEste comando es de uso exclusivo para los Owners oficiales del sistema global. No tienes los permisos necesarios para ejecutarlo.`);
+    }
     return msg.reply(`ꕤ El comando *${command}* no existe.\n✎ Usa *${usedPrefix}help* para ver la lista de comandos disponibles.`);
   }
   if (cmdData.isAdmin && !(isAdmins || isROwner)) return sock.reply(msg.chat, '《✧》 Este comando solo puede ser ejecutado por los Administradores del Grupo.', msg);

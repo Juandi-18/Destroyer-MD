@@ -192,14 +192,26 @@ export default {
     const mainBotJid = mainBotNumber ? `${mainBotNumber}@s.whatsapp.net` : null;
     const currentBotJid = sock.user?.id?.split(':')[0] + '@s.whatsapp.net';
 
-    try {
-      const senderBase = (msg?.sender || '').split('@')[0];
-      const isOwnerUser = (global.owner || []).map(n => n + '@s.whatsapp.net').includes(msg?.sender);
-      const runningOnOwnerSocket = currentBotJid.split('@')[0] === senderBase || fs.existsSync(path.join(process.cwd(), 'Sessions', 'Owner', senderBase)) || fs.existsSync(path.join(process.cwd(), 'Sessions', 'Premium', senderBase));
-      if (currentBotJid !== mainBotJid && !(isOwnerUser && runningOnOwnerSocket)) {
-        return msg.reply('❌ Este comando sólo puede ejecutarse desde el Bot Principal o desde Owners delegados con su propio socket.');
-      }
-    } catch (e) {}
+    const senderBase = (msg?.sender || '').split('@')[0];
+    const isOwnerUser = (global.owner || []).map(n => n + '@s.whatsapp.net').includes(msg?.sender);
+    const isSenderMainBot = msg?.sender === mainBotJid;
+
+    // --- CANDADO GLOBAL: CONTROL DE ACCESO PARA OWNERS Y BOT PRINCIPAL ---
+    if (!isOwnerUser && !isSenderMainBot) {
+      return msg.reply(`❌ *[ACCESO DENEGADO]* ❌\n\nEste comando es de uso exclusivo para los Owners oficiales del sistema global y el Bot Principal. No tienes los permisos necesarios para ejecutarlo.`);
+    }
+
+    // Convertimos la lista de owners a JIDs puros
+    const ownersListJids = (Array.isArray(global.owner) ? global.owner : [global.owner])
+      .map(n => String(n).replace(/\D/g, '') + '@s.whatsapp.net');
+
+    // El socket es válido si es el bot principal o si es un clon Premium que le pertenece a un Owner
+    const isMainBot = currentBotJid === mainBotJid;
+    const isOwnerPremiumSocket = ownersListJids.includes(currentBotJid);
+
+    if (!isMainBot && !isOwnerPremiumSocket) {
+      return msg.reply('❌ Este comando sólo puede ejecutarse desde el Bot Principal o desde un socket Premium oficial administrado por los Owners.');
+    }
 
     const isRemove = TOKEN_REMOVE_COMMANDS.includes(command);
     const commandArgs = (args || []).filter(Boolean);
@@ -235,16 +247,7 @@ export default {
     }
 
     // --- FILTRO 4: RESTRICCIÓN DE INSTANCIA ABSOLUTA PARA SUB-BOTS ---
-    // permitimos que Owners con socket propio (runningOnOwnerSocket) actúen desde su socket
-    let isOwnerUser = false;
-    let runningOnOwnerSocket = false;
-    try {
-      const senderBase = (msg?.sender || '').split('@')[0];
-      isOwnerUser = (global.owner || []).map(n => n + '@s.whatsapp.net').includes(msg?.sender);
-      runningOnOwnerSocket = currentBotJid.split('@')[0] === senderBase || fs.existsSync(path.join(process.cwd(), 'Sessions', 'Owner', senderBase)) || fs.existsSync(path.join(process.cwd(), 'Sessions', 'Premium', senderBase));
-    } catch (e) {}
-
-    if (currentBotNumber !== mainBotNumber && !(isOwnerUser && runningOnOwnerSocket)) {
+    if (!isMainBot && !isOwnerPremiumSocket) {
       return msg.reply(`❌ Los SubBots no están autorizados para iniciar el proceso de vinculación por Token. Usa únicamente: .code o .qr.`);
     }
 
@@ -274,6 +277,37 @@ export default {
       }
       if (targetJid) {
         const userId = targetJid.split('@')[0];
+        const targetNumber = userId;
+
+        // --- VALIDACIÓN ESPECIAL 1: PROTEGER BOT PRINCIPAL ---
+        if (targetNumber === mainBotNumber) {
+          return msg.reply(`👑 [BOT PRINCIPAL] 👑\n\nEste número es el Bot Principal (Owner) del sistema global. No puedes denegar token para él.`);
+        }
+
+        // --- VALIDACIÓN ESPECIAL 2: CONTROL DE AUTO-REMOCIÓN PARA BOTS PREMIUM ---
+        if (currentBotJid === targetJid && !isMainBot) {
+          // Un bot Premium intenta quitarse el token a sí mismo
+          if (isOwnerUser) {
+            // Es Owner: permitir SOLO si en el grupo NO están el Bot Principal ni el Bot Premium del Owner
+            if (msg.isGroup) {
+              try {
+                const groupMetadata = await sock.groupMetadata(msg.chat).catch(() => null);
+                if (groupMetadata) {
+                  const participantJids = new Set(groupMetadata.participants.map(p => p.id));
+                  const hasMainBot = participantJids.has(mainBotJid);
+                  const hasOwnerPremium = participantJids.has(currentBotJid);
+                  if (hasMainBot || hasOwnerPremium) {
+                    return msg.reply(`❌ Usa el Bot Principal o el Premium Autorizado presente en este grupo para quitar el token.`);
+                  }
+                }
+              } catch (e) {}
+            }
+          } else {
+            // No es Owner: bloquea auto-remoción completamente
+            return msg.reply(`⚠️ [SESIÓN PREMIUM ACTIVA] ⚠️\n\nTeniendo una sesión activa e iniciada como Premium no puedes quitarte el token de vinculación pídele a un owner o al botprincipal.`);
+          }
+        }
+
         db.invalidateTokensByUser(userId);
         await downgradePremiumSession(targetJid);
         return msg.reply(`✅ Todos los tokens de @${userId} han sido invalidos y su sesión ha sido degradada.`, { mentions: [targetJid] });
