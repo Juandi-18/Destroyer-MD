@@ -187,7 +187,7 @@ export default {
   category: 'owner',
   description: 'Generar / quitar Tokens de acceso (30 días) para usuarios.',
   isOwner: true,
-  run: async ({ msg, sock, args, command }) => {
+  run: async ({ msg, sock, args, command, usedPrefix }) => {
     const mainBotNumber = global.sock?.user?.id?.split(':')[0];
     const mainBotJid = mainBotNumber ? `${mainBotNumber}@s.whatsapp.net` : null;
     const currentBotJid = sock.user?.id?.split(':')[0] + '@s.whatsapp.net';
@@ -318,7 +318,8 @@ export default {
     // Flujo normal de generación
     const userJid = targetJid;
     if (!userJid) return msg.reply('❌ Especifica el usuario a quien dar el token.');
-    const userId = userJid.split('@')[0];
+    // Guardar `userId` estrictamente como dígitos puros, alineado con el validador de subs.js
+    const userId = targetNumber.replace(/\D/g, '');
 
     const existing = db.getActiveTokenByUser(userId);
     if (existing && existing.expiresAt > Date.now()) {
@@ -332,7 +333,6 @@ export default {
     db.createToken(token, userId, ownerId, expiresAt);
 
     try {
-      const usedPrefix = '!'; 
       await sock.sendMessage(userJid, { text: `👑 Has recibido un Token de acceso:\n\nToken: *${token}*\nVálido hasta: ${new Date(expiresAt).toLocaleString()}\n\nUsa el comando en el Bot Principal:\n${usedPrefix}qrpremium ${token}\no\n${usedPrefix}codepremium ${token}\n\nNo compartas este token.` });
     } catch (e) {}
 

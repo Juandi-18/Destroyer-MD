@@ -1,41 +1,65 @@
 import fetch from 'node-fetch'
+import db from '#db';
 
 export default {
   command: ['pinterest', 'pin'],
   category: 'downloads',
-  description: 'Buscar y descargar imágenes de Pinterest.',
+  description: 'Buscar y descargar imágenes de Pinterest de forma aleatoria.',
   run: async ({ msg, sock, args, usedPrefix, command }) => {
     const text = args.join(' ')
     const isPinterestUrl = /^https?:\/\//.test(text)
+    
     if (!text) {
       return msg.reply('《✧》 Por favor, ingresa un término de búsqueda o un enlace de Pinterest.')
     }
+    
     try {
       if (isPinterestUrl) {
         const data = await getPinterestDownload(text)
-        if (!data) return msg.reply('ꕥ No se pudo obtener el contenido.')
-        const caption = `ㅤ۟∩　ׅ　★　ׅ　🅟𝖨𝖭 🅓ownload　ׄᰙ　\n\n${data.title ? `𖣣ֶㅤ֯⌗ ☆  ⬭ *Título* › ${data.title}\n` : ''}${data.description ? `𖣣ֶㅤ֯⌗ ☆  ⬭ *Descripción* › ${data.description}\n` : ''}${data.author ? `𖣣ֶㅤ֯⌗ ☆  ⬭ *Autor* › ${data.author}\n` : ''}${data.username ? `𖣣ֶㅤ֯⌗ ☆  ⬭ *Usuario* › ${data.username}\n` : ''}${data.followers ? `𖣣ֶㅤ֯⌗ ☆  ⬭ *Seguidores* › ${data.followers}\n` : ''}${data.uploadDate ? `𖣣ֶㅤ֯⌗ ☆  ⬭ *Fecha* › ${data.uploadDate}\n` : ''}${data.likes ? `𖣣ֶㅤ֯⌗ ☆  ⬭ *Likes* › ${data.likes}\n` : ''}${data.comments ? `𖣣ֶㅤ֯⌗ ☆  ⬭ *Comentarios* › ${data.comments}\n` : ''}${data.views ? `𖣣ֶㅤ֯⌗ ☆  ⬭ *Vistas* › ${data.views}\n` : ''}${data.saved ? `𖣣ֶㅤ֯⌗ ☆  ⬭ *Guardados* › ${data.saved}\n` : ''}${data.format ? `𖣣ֶㅤ֯⌗ ☆  ⬭ *Formato* › ${data.format}\n` : ''}𖣣ֶㅤ֯⌗ ☆  ⬭ *Enlace* › ${text}`
+        if (!data || !data.url) return msg.reply('ꕥ No se pudo extraer el contenido de este enlace. Intenta con otro.')
+        
+        const caption = `ㅤ۟∩ ׅ ★ ׅ 🅟𝖨𝖭 🅓ownload ׄᰙ \n\n${data.title ? `𖣣ֶㅤ֯⌗ ☆  ⬭ *Título* › ${data.title}\n` : ''}${data.description ? `𖣣ֶㅤ֯⌗ ☆  ⬭ *Descripción* › ${data.description}\n` : ''}${data.author ? `𖣣ֶㅤ֯⌗ ☆  ⬭ *Autor* › ${data.author}\n` : ''}${data.username ? `𖣣ֶㅤ֯⌗ ☆  ⬭ *Usuario* › ${data.username}\n` : ''}${data.followers ? `𖣣ֶㅤ֯⌗ ☆  ⬭ *Seguidores* › ${data.followers}\n` : ''}${data.uploadDate ? `𖣣ֶㅤ֯⌗ ☆  ⬭ *Fecha* › ${data.uploadDate}\n` : ''}${data.likes ? `𖣣ֶㅤ֯⌗ ☆  ⬭ *Likes* › ${data.likes}\n` : ''}${data.comments ? `𖣣ֶㅤ֯⌗ ☆  ⬭ *Comentarios* › ${data.comments}\n` : ''}${data.views ? `𖣣ֶㅤ֯⌗ ☆  ⬭ *Vistas* › ${data.views}\n` : ''}${data.saved ? `𖣣ֶㅤ֯⌗ ☆  ⬭ *Guardados* › ${data.saved}\n` : ''}${data.format ? `𖣣ֶㅤ֯⌗ ☆  ⬭ *Formato* › ${data.format}\n` : ''}𖣣ֶㅤ֯⌗ ☆  ⬭ *Enlace* › ${text}`
+        
         if (data.type === 'video') {
           await sock.sendMessage(msg.chat, { video: { url: data.url }, caption, mimetype: 'video/mp4', fileName: 'pin.mp4' }, { quoted: msg })
-        } else if (data.type === 'image') {
-          await sock.sendMessage(msg.chat, { image: { url: data.url }, caption }, { quoted: msg })
         } else {
-          throw new Error('Contenido no soportado.')
+          await sock.sendMessage(msg.chat, { image: { url: data.url }, caption }, { quoted: msg })
         }
+        return;
       } else {
         const results = await getPinterestSearch(text)
         if (!results || results.length === 0) {
           return msg.reply(`《✧》 No se encontraron resultados para *${text}*.`)
         }
-        const medias = results.slice(0, 10).map(r => ({ 
-          type: r.type === 'video' ? 'video' : 'image', 
-          data: { url: r.image }, 
-          caption: `ㅤ۟∩　ׅ　★　ׅ　🅟𝖨𝖭 🅢earch　ׄᰙ　\n\n${r.title ? `𖣣ֶㅤ֯⌗ ☆  ⬭ *Título* › ${r.title}\n` : ''}${r.description ? `𖣣ֶㅤ֯⌗ ☆  ⬭ *Descripción* › ${r.description}\n` : ''}${r.name ? `𖣣ֶㅤ֯⌗ ☆  ⬭ *Autor* › ${r.name}\n` : ''}${r.username ? `𖣣ֶㅤ֯⌗ ☆  ⬭ *Usuario* › ${r.username}\n` : ''}${r.followers ? `𖣣ֶㅤ֯⌗ ☆  ⬭ *Seguidores* › ${r.followers}\n` : ''}${r.likes ? `𖣣ֶㅤ֯⌗ ☆  ⬭ *Likes* › ${r.likes}\n` : ''}${r.created_at ? `𖣣ֶㅤ֯⌗ ☆  ⬭ *Fecha* › ${r.created_at}\n` : ''}`
-        }))
-        await sock.sendAlbumMessage(msg.chat, medias, { quoted: msg })
+
+        const medias = results
+          .map(r => {
+            const mediaUrl = r.image || r.url;
+            if (!mediaUrl) return null;
+            return {
+              type: r.type === 'video' ? 'video' : 'image',
+              url: mediaUrl,
+              caption: `ㅤ۟∩ ׅ ★ ׅ 🅟𝖨𝖭 🅢earch ׄᰙ \n\n${r.title ? `𖣣ֶㅤ֯⌗ ☆  ⬭ *Título* › ${r.title}\n` : ''}${r.description ? `𖣣ֶㅤ֯⌗ ☆  ⬭ *Descripción* › ${r.description}\n` : ''}${r.name ? `𖣣ֶㅤ֯⌗ ☆  ⬭ *Autor* › ${r.name}\n` : ''}${r.username ? `𖣣ֶㅤ֯⌗ ☆  ⬭ *Usuario* › ${r.username}\n` : ''}${r.followers ? `𖣣ֶㅤ֯⌗ ☆  ⬭ *Seguidores* › ${r.followers}\n` : ''}${r.likes ? `𖣣ֶㅤ֯⌗ ☆  ⬭ *Likes* › ${r.likes}\n` : ''}${r.created_at ? `𖣣ֶㅤ֯⌗ ☆  ⬭ *Fecha* › ${r.created_at}\n` : ''}`
+            };
+          })
+          .filter(Boolean);
+
+        if (medias.length === 0) {
+          return msg.reply(`《✧》 No se pudo procesar ninguna imagen de los resultados.`);
+        }
+
+        // 🔥 MEJORA CLAVE: Selección al azar del pool total de resultados indexados
+        const resultadoAleatorio = medias[Math.floor(Math.random() * medias.length)];
+
+        // Enviamos directamente el archivo multimedia seleccionado de forma aleatoria
+        if (resultadoAleatorio.type === 'video') {
+          await sock.sendMessage(msg.chat, { video: { url: resultadoAleatorio.url }, caption: resultadoAleatorio.caption, mimetype: 'video/mp4' }, { quoted: msg })
+        } else {
+          await sock.sendMessage(msg.chat, { image: { url: resultadoAleatorio.url }, caption: resultadoAleatorio.caption }, { quoted: msg })
+        }
       }
     } catch (e) {
-      await msg.reply(`> An unexpected error occurred while executing command *${usedPrefix + command}*. Please try again or contact support if the issue persists.\n> [Error: *${e.message}*]`)
+      await msg.reply(`> Ocurrió un error inesperado al ejecutar el comando *${usedPrefix + command}*.\n> [Error: *${e.message}*]`)
     }
   }
 }
@@ -47,13 +71,6 @@ async function getPinterestDownload(url) {
         const isVideo = res.result.isVideo || false
         const bestUrl = res.result.best.url
         return { type: isVideo ? 'video' : 'image', title: null, description: null, author: null, username: null, uploadDate: null, likes: null, format: isVideo ? 'mp4' : 'jpg', url: bestUrl }
-      }
-    },
-    { endpoint: `${global.APIs.axi.url}/down/pinterest?url=${encodeURIComponent(url)}`, extractor: (res) => {
-        if (!res.status || !res.resultado?.url) return null
-        const urlVideo = res.resultado.url
-        const isVideo = urlVideo.includes('.mp4')
-        return { type: isVideo ? 'video' : 'image', title: res.resultado.titulo || null, author: res.resultado.autor || null, format: isVideo ? 'mp4' : 'jpg', url: urlVideo, thumbnail: res.resultado.thumbnail || null }
       }
     },
     { endpoint: `${global.APIs.delirius.url}/download/pinterestdl?url=${encodeURIComponent(url)}`, extractor: (res) => {
@@ -90,19 +107,9 @@ async function getPinterestSearch(query) {
         return res.data.map(d => ({ type: 'image', title: d.title === '-' ? null : d.title, description: d.description === ' ' ? null : d.description, name: d.full_name || null, username: d.username || null, followers: d.followers, likes: d.likes, created_at: d.created, image: d.hd || d.mini || null }))
       }
     },
-    { endpoint: `${global.APIs.yuki.url}/search/pinterestvideo?query=${encodeURIComponent(query)}&key=${global.APIs.yuki.key}`, extractor: (res) => {
-        if (!res.status || !res.data?.videos?.length) return null
-        return res.data.videos.map(d => ({ type: 'video', title: d.title || null, image: d.thumb || null, likes: d.likes, duration: d.duration, url: d.dl || null }))
-      }
-    },
     { endpoint: `${global.APIs.delirius.url}/search/pinterestv2?text=${encodeURIComponent(query)}`, extractor: (res) => {
         if (!res.status || !Array.isArray(res.data) || !res.data.length) return null
         return res.data.map(d => ({ type: 'image', title: d.title === '-' ? null : d.title, description: d.description === ' ' ? null : d.description, name: d.name || null, username: d.username || null, followers: d.followers, likes: d.likes, created_at: d.created_at, image: d.image || null }))
-      }
-    },
-    { endpoint: `${global.APIs.delirius.url}/search/pinterestvideo?query=${encodeURIComponent(query)}`, extractor: (res) => {
-        if (!res.status || !Array.isArray(res.data) || !res.data.length) return null
-        return res.data.map(d => ({ type: 'video', title: d.title || null, description: d.description || null, name: d.author?.full_name || null, username: d.author?.username || null, followers: d.author?.followers || null, likes: d.likes, created_at: d.created_at, image: d.thumbnail || null, url: d.video || null }))
       }
     },
     { endpoint: `${global.APIs.siputzx.url}/api/s/pinterest?query=${encodeURIComponent(query)}&type=image`, extractor: (res) => {
@@ -116,11 +123,6 @@ async function getPinterestSearch(query) {
           const media = d.media_urls?.[0] || {}
           return { type: media.type || 'image', title: d.title || null, description: d.description || null, name: d.uploader?.full_name || null, username: d.uploader?.username || null, followers: d.uploader?.followers || null, created_at: null, image: media.url || media.thumbnail || null, url: media.type === 'video' ? media.url : null, duration: media.duration_ms ? `${Math.floor(media.duration_ms / 1000)}s` : null }
         })
-      }
-    },
-    { endpoint: `${global.APIs.neoapis.url}/api/search/pinterest?query=${encodeURIComponent(query)}`, extractor: (res) => {
-        if (!res.status || !Array.isArray(res.data) || !res.data.length) return null
-        return res.data.map(d => ({ type: 'image', title: d.title || null, name: d.username || null, username: d.username || null, image: d.image || null, source: d.source || null }))
       }
     },
     { endpoint: `${global.APIs.ootaizumi.url}/search/pinterest?query=${encodeURIComponent(query)}`, extractor: (res) => {

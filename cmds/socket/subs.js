@@ -96,6 +96,10 @@ export async function startSubBot(msg, client, caption = '', isCode = false, pho
   socks.sessionFolder = sessionFolder;
   socks.botType = carpetaDestino;
   
+  // ⚡ CORRECCIÓN QUIRÚRGICA: Variables movidas aquí para encapsularlas por instancia clon
+  let bootTime = Date.now();
+  let botReady = false;
+  
   let sentMsg = null;
   let msgCode = null;
   let timerBorrador = null;
@@ -125,8 +129,6 @@ export async function startSubBot(msg, client, caption = '', isCode = false, pho
     return jid;
   };
   
-  let bootTime = Date.now();
-  let botReady = false;
   socks.ev.on('messages.upsert', async ({ messages, type }) => {
     if (!botReady) return;
     if (type !== 'notify') return;
@@ -151,9 +153,16 @@ export async function startSubBot(msg, client, caption = '', isCode = false, pho
   socks.ev.on('connection.update', async ({ connection, lastDisconnect, qr }) => {
     if (connection === 'open') {
       bootTime = Date.now();
-      botReady = true;
+      botReady = false; // Forzamos un reset momentáneo para limpiar caché
       socks.uptime = Date.now();
       socks.userId = cleanJid(socks.user?.id?.split('@')[0]);
+      
+      // Forzar flush de notificaciones pendientes y reactivación limpia del handler de mensajes
+      setTimeout(() => {
+        botReady = true;
+        console.log(chalk.greenBright(`[ ✿ ] SUB-BOT ${socks.userId} flujo de eventos message.upsert reactivado y descongelado con éxito.`));
+      }, 2000);
+      
       const botDir = socks.userId + '@s.whatsapp.net';
       const settings = db.getSettings(botDir) || {};
       const nuevoTipo = carpetaDestino === 'Premium' ? 'Premium' : 'Sub';
@@ -230,16 +239,31 @@ export async function startSubBot(msg, client, caption = '', isCode = false, pho
       };
 
       if (socks.isLoggingOut || socks.isReloading || socks.isReplacing) {
+        const targetId = socks.userId || id;
         cleanupOldConn();
         delete reintentos[botId];
         await limpiarMensajesVinculacion();
+
+        // CAPTURA Y LANZAMIENTO DE MIGRACIÓN:
+        // Si el clon viejo era un Sub normal pero en la DB ya se actualizó a Premium, forzamos su encendido VIP
+        if (socks.isReloading && socks.botType === 'Sub') {
+          try {
+            const targetBotJid = `${targetId}@s.whatsapp.net`;
+            const currentSettings = db.getSettings(targetBotJid) || {};
+            if (currentSettings.type === 'Premium') {
+              console.log(chalk.cyanBright(`[ ✿ ] MIGRACIÓN CONTROLADA: Levantando bot ${targetId} en el canal Premium.`));
+              setTimeout(() => startSubBot(msg, getClient(client), caption, isCode, targetId, chatId, isCommand, 'Premium'), 2500);
+              return;
+            }
+          } catch (e) { console.error('[Error en puente de migración]:', e); }
+        }
+
         if (socks.isLoggingOut && fs.existsSync(sessionFolder)) {
           setTimeout(() => {
             try {
               fs.rmSync(sessionFolder, { recursive: true, force: true });
               console.log(chalk.gray(`[ ✿ ] Sesión limpiada: ${sessionFolder}`));
-            }
-            catch (e) { console.error(`[ ✿  ] No se pudo eliminar ${sessionFolder}:`, e); }
+            } catch (e) { console.error(`[ ✿  ] No se pudo eliminar ${sessionFolder}:`, e); }
           }, 3000);
         }
         return;
@@ -300,6 +324,37 @@ export async function startSubBot(msg, client, caption = '', isCode = false, pho
           console.log(chalk.yellowBright(`[ ✿ ] SUB-BOT ${id} Ignorando borrado físico 401 debido a inicialización/reemplazo controlado.`));
         }
         return;
+      }
+
+      // 4. MANEJO DE EXPIRACIÓN DE VINCULACIÓN (408 - TIMEOUT / QR EXPIRED)
+      if (statusCode === 408 || errorMessage.toLowerCase().includes('qr refs attempts ended')) {
+        const isNeverConnected = !socks.user?.id;
+        
+        // Solo proceder con limpieza definitiva si la sesión nunca llegó a conectarse
+        // y no estamos en un proceso controlado de recarga/reemplazo, y no es Premium
+        if (isNeverConnected && !socks.isReloading && !socks.isReplacing && socks.botType !== 'Premium') {
+          console.log(chalk.redBright(`[ ✿ ] TIMEOUT (${statusCode}): La vinculación de ${id} expiró. Limpiando recursos...`));
+          
+          cleanupOldConn();
+          try { delete reintentos[botId]; } catch (e) {}
+          try { await limpiarMensajesVinculacion(); } catch (e) {}
+          
+          if (fs.existsSync(sessionFolder)) {
+            try { fs.rmSync(sessionFolder, { recursive: true, force: true }); } catch (e) {}
+          }
+          
+          try {
+            const targetBotJid = `${id}@s.whatsapp.net`;
+            const currentSettings = db.getSettings(targetBotJid) || {};
+            // Solo borrar de la DB si es un sub gratuito abandonado y no un bot Premium legítimo
+            if (currentSettings.type !== 'Premium') {
+              db.deletedb('settings', targetBotJid);
+              console.log(chalk.gray(`[ ✿ ] Registros de SQLite removidos de forma segura para evitar conflictos.`));
+            }
+          } catch (e) {}
+          
+          return;
+        }
       }
       cleanupOldConn();
       console.log(chalk.gray(`[ ✿  ]  SUB-BOT ${botId} reconectando en 5s...`));
@@ -376,10 +431,13 @@ export default {
       return ownersList.includes(currentBotFullJid);
     })();
 
-    let id = normalizePhone(senderNumeric) || senderNumeric;
+    let id = cleanJid(senderNumeric);
     if (rawArg && isOwner) {
-      const provided = normalizePhone(rawArg);
-      if (provided) id = provided;
+      const isTokenFormat = rawArg.toUpperCase().match(/^[A-Z0-9]{4}-[0-9]{4}$/);
+      if (!isTokenFormat) {
+        const provided = cleanJid(rawArg);
+        if (provided) id = provided;
+      }
     }
 
     const phone = id;
@@ -435,7 +493,12 @@ export default {
       }
 
       const tokenRecord = db.getTokenRecord(providedToken.toUpperCase());
-      if (!tokenRecord || tokenRecord.active !== 1 || tokenRecord.expiresAt <= Date.now() || tokenRecord.userId !== id) {
+
+      // Limpieza de emergencia para asegurar que ambos IDs sean solo dígitos puros de WhatsApp
+      const cleanDbUserId = tokenRecord?.userId ? String(tokenRecord.userId).replace(/\D/g, '') : '';
+      const cleanCurrentId = id ? String(id).replace(/\D/g, '') : '';
+
+      if (!tokenRecord || tokenRecord.active !== 1 || tokenRecord.expiresAt <= Date.now() || cleanDbUserId !== cleanCurrentId) {
         return sock.reply(msg.chat, `❌ Token inválido, expirado o no pertenece a este número. Pídele un token válido a un Owner.`, msg);
       }
 

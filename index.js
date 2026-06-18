@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import "./settings.js";
 import main from '#main';
 import events from '#events';
@@ -244,7 +245,7 @@ export async function startBot() {
   const sock = makeWASocket({
     version,
     logger: pino({ level: 'silent' }),
-    browser: Browsers.macOS('Chrome'),
+    browser: Browsers.appropriate('Chrome'),
     printQRInTerminal: false,
     auth: { creds: state.creds, keys: makeCacheableSignalKeyStore(state.keys, pino({ level: 'silent' })) },
     markOnlineOnConnect: true,

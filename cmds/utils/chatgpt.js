@@ -1,7 +1,10 @@
+import { GoogleGenAI } from '@google/genai';
 import fetch from 'node-fetch';
-import axios from 'axios';
-import FormData from 'form-data';
 import db from '#db';
+
+if (!global.geminiCooldowns) {
+  global.geminiCooldowns = new Map();
+}
 
 const langs = { typescript: 'ts', javascript: 'js', python: 'py', html: 'html', css: 'css', java: 'java', cpp: 'cpp', c: 'c', json: 'json', bash: 'sh', sql: 'sql', rust: 'rs', go: 'go', php: 'php', ruby: 'rb' };
 
@@ -41,88 +44,208 @@ function detectLanguage(query, response) {
   return null;
 }
 
-async function uploadToUguu(buffer, mimetype) {
-  try {
-    const body = new FormData();
-    const extension = mimetype.split('/')[1] || 'jpg';
-    body.append('files[]', buffer, `file.${extension}`);
-    const res = await fetch('https://uguu.se/upload.php', { method: 'POST', body, headers: body.getHeaders() });
-    const json = await res.json();
-    return json.files?.[0]?.url ?? null;
-  } catch {
-    return null;
-  }
-}
-
 export default {
-  command: ['ia', 'chatgpt'],
+  command: ['ia', 'geminis'],
   category: 'utils',
-  description: 'Realizar peticiones a ChatGPT.',
+  description: 'IA directa con motor de imágenes, búsqueda en vivo y sistema antibuso de Cooldown.',
   run: async ({ msg, sock, args, usedPrefix, command }) => {
-    const text = args.join(' ').trim();
-    if (!text) {
-      return msg.reply(`《✧》 Escriba una *petición* para que *ChatGPT* le responda.`);
+    let text = args.join(' ').trim();
+    if (!text && msg.body) text = msg.body.trim();
+
+    if (text.toLowerCase().startsWith('geminis')) {
+      text = text.slice(7).trim();
     }
-    const botId = sock.user.id.split(':')[0] + '@s.whatsapp.net';
-    const settings = db.getSettings(botId);
+
+    if (!text) {
+      return msg.reply(`《✧》 Escriba una *petición* o una *instrucción de diseño* para Destroyer GenAI.`);
+    }
+
+    // 🕒 CONFIGURACIÓN DEL COOLDOWN ANTISPAM (4 SEGUNDOS)
+    const COOLDOWN_TIME = 4000; 
+    const cooldownKey = `${msg.chat}-${msg.sender}`;
+    const lastUsed = global.geminiCooldowns.get(cooldownKey);
+    const ahora = Date.now();
+
+    if (lastUsed && (ahora - lastUsed) < COOLDOWN_TIME) {
+      const tiempoRestante = ((COOLDOWN_TIME - (ahora - lastUsed)) / 1000).toFixed(1);
+      await msg.react('⏳');
+      return msg.reply(`⏳ *[SISTEMA ANTIESPAM]*\n───────────────────\nJuandi, estás enviando peticiones demasiado rápido.\n\n> ⏱️ Por favor, espera *${tiempoRestante} segundos* antes de volver a consultar a Gemini.`);
+    }
+
+    global.geminiCooldowns.set(cooldownKey, ahora);
+
+    const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+    const botJid = sock.user.id.split(':')[0] + '@s.whatsapp.net';
+    const settings = db.getSettings(botJid);
     const user = db.getUser(msg.sender);
     const username = user?.name || 'usuario';
     const botname = settings.botname || 'Bot';
-    const basePrompt = `Tu nombre es ${botname} y parece haber sido creada por |𝔇ĕ𝐬†𝓻⊙γĕ𝓻𒆜. Tu versión actual es @latest, Tú usas el idioma Español. Llamarás a las personas por su nombre ${username}, te gusta ser divertida, y te encanta aprender. Lo más importante es que debes ser amigable con la persona con la que estás hablando. ${username}`;
+    
+    const basePrompt = `Tu nombre es ${botname} y fuiste creada por |𝔇ĕ𝐬†𝓻⊙γĕ𝓻𒆜. Tu versión actual es @latest. Hablarás con el usuario llamándolo por su nombre: ${username}. Tu estilo de respuesta debe ser amigable, divertido y muy inteligente. Puedes procesar, crear o editar imágenes de forma nativa en este mismo chat si te lo solicitan de forma explícita.`;
+
+    const requiereImagen = /(crea|imagina|dibuja|genera|diseña|haz una foto|haz una imagen|haz un dibujo|muéstrame un)/i.test(text.toLowerCase());
+
     try {
-      const { key } = await sock.sendMessage(msg.chat, { text: `ꕥ *ChatGPT* está procesando tu respuesta...` }, { quoted: msg });
+      const { key } = await sock.sendMessage(msg.chat, { text: `🧠 *[DESTROYER MULTIMEDIA ENGINE]* 🧠\n───────────────────\n📡 *Estado:* Conectando a Google AI Studio...\n⚡ *Modelo:* \`${requiereImagen ? 'Gemini 3.1 Flash Image' : 'Gemini 3.5 Flash'}\`\n🎨 *Modo:* \`${requiereImagen ? 'Generador de Imágenes Nativo' : 'Consulta Directa Estándar'}\`\n───────────────────\n_Procesando flujos de datos en tiempo real..._` }, { quoted: msg });
       await msg.react('🕒');
-      let responseText = null;
-      let imageBuffer = null;
-      let isImage = false;
-      if (msg.quoted && (msg.quoted.message?.imageMessage || msg.quoted.message?.videoMessage)) {
-        isImage = true;
-        const media = msg.quoted.message?.imageMessage || msg.quoted.message?.videoMessage;
-        const buffer = await sock.downloadMediaMessage(msg.quoted);
-        if (buffer) {
-          const uploadUrl = await uploadToUguu(buffer, media.mimetype);
-          if (uploadUrl) imageBuffer = uploadUrl;
+
+      const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+      let partsPayload = [{ text: text }];
+
+      if (msg.quoted) {
+        const quotedMsg = msg.quoted.message;
+        const imageMessage = quotedMsg?.imageMessage;
+        const documentMessage = quotedMsg?.documentMessage || quotedMsg?.documentWithCaptionMessage?.message?.documentMessage;
+        
+        if (imageMessage && imageMessage.mimetype) {
+          const buffer = await sock.downloadMediaMessage(msg.quoted);
+          if (buffer) {
+            partsPayload.unshift({ inlineData: { mimeType: imageMessage.mimetype, data: buffer.toString('base64') } });
+          }
+        } else if (documentMessage && documentMessage.mimetype) {
+          const buffer = await sock.downloadMediaMessage(msg.quoted);
+          if (buffer) {
+            partsPayload.unshift({ inlineData: { mimeType: documentMessage.mimetype, data: buffer.toString('base64') } });
+          }
         }
       }
-      try {
-        const requestBody = { content: text, user: msg.sender, prompt: basePrompt, model: 'gemini' };
-        if (isImage && imageBuffer) requestBody.imageBuffer = imageBuffer;
-        const res = await axios.post('https://ai.siputzx.my.id', requestBody);
-        if (res.data?.result) responseText = res.data.result;
-      } catch {}
-      if (!responseText) {
+
+      let responseText = null;
+
+      if (requiereImagen) {
+        let imageBufferResult = null;
+        let textResult = '';
+
         try {
-          const res = await fetch(`${global.APIs.yuki.url}/ai/gptprompt?text=${encodeURIComponent(text)}&prompt=${encodeURIComponent(basePrompt)}&key=${global.APIs.yuki.key}`);
-          const json = await res.json();
-          if (json?.result?.text) responseText = json.result.text;
-          else if (json?.result) responseText = json.result;
-          else if (json?.results) responseText = json.results;
-        } catch {}
-      }
-      if (!responseText) {
+          let contentsPayload = [{ text: text }];
+          if (msg.quoted && msg.quoted.message?.imageMessage) {
+            const buffer = await sock.downloadMediaMessage(msg.quoted);
+            if (buffer) {
+              contentsPayload.unshift({ inlineData: { mimeType: msg.quoted.message.imageMessage.mimetype, data: buffer.toString('base64') } });
+            }
+          }
+
+          const response = await ai.models.generateContent({
+            model: 'gemini-3.1-flash-image',
+            contents: contentsPayload,
+            config: {
+              responseModalities: ['TEXT', 'IMAGE'],
+              responseFormat: { image: { aspectRatio: '1:1', imageSize: '1K' } },
+              tools: [{ googleSearch: { searchTypes: { webSearch: {}, imageSearch: {} } } }]
+            }
+          });
+
+          for (const part of response.candidates[0].content.parts) {
+            if (part.text) textResult += part.text;
+            else if (part.inlineData) imageBufferResult = Buffer.from(part.inlineData.data, 'base64');
+          }
+        } catch (imageErr) {
+          imageBufferResult = null;
+        }
+
+        if (!imageBufferResult) {
+          try {
+            const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(text)}?width=1024&height=1024&nologo=true`;
+            const imageRes = await fetch(imageUrl);
+            if (imageRes.ok) {
+              imageBufferResult = await imageRes.buffer();
+              textResult = `🎨 _Imagen generada con éxito vía Destroyer Engine (Capa de respaldo activa)._`;
+            }
+          } catch (backupErr) {
+            console.error('[Error en Respaldo Gráfico]:', backupErr.message);
+          }
+        }
+
+        if (imageBufferResult) {
+          await msg.react('🎨');
+          await sock.sendMessage(msg.chat, { text: `✅ *Proceso de diseño completado exitosamente.*`, edit: key });
+          await sock.sendMessage(msg.chat, { image: imageBufferResult, caption: textResult }, { quoted: msg });
+          return;
+        } else {
+          await msg.react('❌');
+          return sock.sendMessage(msg.chat, { text: '《✧》 No se pudo generar la imagen debido a las restricciones de cuota actuales. Intenta más tarde.', edit: key });
+        }
+      } else {
         try {
-          const res = await fetch(`${global.APIs.delirius.url}/ia/gptprompt?text=${encodeURIComponent(text)}&prompt=${encodeURIComponent(basePrompt)}`);
-          const json = await res.json();
-          if (json?.status && json?.data && json.data !== 'Error: No response') responseText = json.data;
-        } catch {}
+          const response = await ai.models.generateContent({
+            model: 'gemini-3.5-flash',
+            contents: [{ role: 'user', parts: partsPayload }],
+            config: {
+              systemInstruction: basePrompt,
+              temperature: 0.7,
+              maxOutputTokens: 2048,
+              tools: [{ googleSearch: {} }]
+            }
+          });
+          if (response && response.text) responseText = response.text;
+        } catch (err) {
+          responseText = null;
+        }
       }
-      if (!responseText) {
-        return sock.reply(msg.chat, '《✧》 No se pudo obtener una *respuesta* válida', msg);
+
+      // 🔄 CASCADA DE FALLBACK INTELIGENTE ACTUALIZADA (GOOGLE RASPADO + DELIRIUS)
+      if (!responseText && !requiereImagen) {
+        try {
+          // Si el usuario pide explícitamente una letra (lyrics), hacemos bypass directo a Google para evitar alucinaciones
+          if (/(letra|lyrics|cancion|cantas)/i.test(text.toLowerCase())) {
+            const searchRes = await fetch(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(text + ' letra')}`, {
+              headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
+            });
+            const html = await searchRes.text();
+            
+            // Si encontramos fragmentos web limpios, los usamos para alimentar el fallback de Delirius como contexto real
+            if (html && html.includes('result__snippet')) {
+              const snippets = html.match(/<a class="result__snippet"[\s\S]*?>([\s\S]*?)<\/a>/g)
+                ?.map(s => s.replace(/<[^>]*>/g, '').trim()).slice(0, 3).join('\n') || '';
+              
+              if (snippets) {
+                const res = await fetch(`${global.APIs.delirius.url}/ia/gptprompt?text=${encodeURIComponent('Devuelve ordenadamente la letra exacta usando esta información real extraída de internet:\n' + snippets)}&prompt=${encodeURIComponent(basePrompt)}`);
+                const json = await res.json();
+                if (json?.status && json?.data && json.data !== 'Error: No response') responseText = json.data;
+              }
+            }
+          }
+          
+          // Fallback tradicional en caso de que no sea una letra o falle el raspado previo
+          if (!responseText) {
+            const res = await fetch(`${global.APIs.delirius.url}/ia/gptprompt?text=${encodeURIComponent(text)}&prompt=${encodeURIComponent(basePrompt)}`);
+            const json = await res.json();
+            if (json?.status && json?.data && json.data !== 'Error: No response') responseText = json.data;
+          }
+        } catch (fallBackErr) {
+          console.log('[Error en Cascada de Datos]:', fallBackErr.message);
+        }
       }
+
+      if (!responseText && !requiereImagen) {
+        await msg.react('❌');
+        return sock.sendMessage(msg.chat, { text: '《✧》 Las centrales se encuentran congestionadas en este momento. Intenta de nuevo.', edit: key });
+      }
+
       const clean = responseText.trim();
       const lang = detectLanguage(text, clean);
+
       if (lang) {
         const ext = langs[lang] ?? 'txt';
         const filename = `ꕥ respuesta.${ext}`;
-        const tableData = { title: '✎ ChatGPT', headers: ['Campo', 'Valor'], rows: [ ['Lenguaje', lang], ['Líneas', String(clean.split('\n').length)], ['Caracteres', String(clean.length)], ], };
-        await sock.sendMessage(msg.chat, { text: `ꕥ *ChatGPT* · respuesta en *${lang}*`, edit: key });
+        const tableData = { 
+          title: `✎ ${botname} Engine`, 
+          headers: ['Módulo', 'Estado'], 
+          rows: [ ['Lenguaje', lang.toUpperCase()], ['Contexto', 'Directo Nativo'], ['Estructura', 'Petición Única'] ] 
+        };
+        await sock.sendMessage(msg.chat, { text: `✅ *Bloque de código ${lang.toUpperCase()} generado exitosamente.*`, edit: key });
         await sock.sendCodeMessage(msg.chat, filename, clean, msg, tableData);
       } else {
         await sock.sendMessage(msg.chat, { text: clean, edit: key });
       }
+
       await msg.react('✔️');
+
     } catch (e) {
-      await msg.reply(`> An unexpected error occurred while executing command *${usedPrefix + command}*. Please try again or contact support if the issue persists.\n> [Error: *${e.message}*]`);
+      if (!e.message?.includes('429') && !e.message?.includes('503')) {
+        console.error(e);
+        await msg.reply(`> Ocurrió un error inesperado en las centrales multimedia de Destroyer.\n> [Error: *${e.message}*]`);
+      }
     }
   },
 };

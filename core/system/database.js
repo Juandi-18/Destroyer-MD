@@ -89,12 +89,12 @@ export const defChat = {
   sGoodbye: '',
   nsfw: 0,
   modosexo: 0,
-  alerts: 1,
+  alerts: 0,
   gacha: 1,
   economy: 1,
   adminonly: 0,
   primaryBot: null,
-  antilinks: 1,
+  antilinks: 0,
   antistatus: 0,
   rolls: '{}'
 };

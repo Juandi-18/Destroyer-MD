@@ -125,6 +125,43 @@ export default async (sock, msg) => {
     }
   }
 
+  // 🧠 MODIFICACIÓN VIP: DETECTOR AUTOMÁTICO DE TURNOS CONTINUOS DE GEMINI (FORZADO ESTRICTO)
+  const botNumber = botJid.split('@')[0];
+  const isReplyToBot = msg.quoted && msg.quoted.sender?.includes(botNumber);
+  
+  // Expresión regular para validar estrictamente que el mensaje empiece con "geminis" (ignorando espacios o mayúsculas)
+  const tienePalabraClave = /^\s*geminis\b/i.test(body);
+
+  // CONTROL DE RESPUESTAS DIRECTAS AL BOT
+  if (isReplyToBot) {
+    // Caso 1: Si es una respuesta al bot pero NO empieza con la palabra clave y NO es un comando regular, nos salimos en silencio
+    if (!tienePalabraClave && !match) {
+      return; 
+    }
+
+    // Caso 2: Si empieza con "geminis", forzamos el disparo manual de la IA, sin importar si tenía prefijo o no
+    if (tienePalabraClave) {
+      const todosMisBots = getCachedSessionBots(); 
+      if (todosMisBots.includes(sender)) return; // Cortafuegos antibucles
+
+      const geminiCmd = global.comandos.get('geminis') || global.comandos.get('ia');
+      if (geminiCmd) {
+        try {
+          await sock.sendPresenceUpdate('composing', msg.chat);
+          await sock.readMessages([msg.key]);
+          users.lastCmd = Date.now();
+          db.setChatUser(msg.chat, sender, 'lastCmd', users.lastCmd);
+          
+          // Forzamos la ejecución pasando el cuerpo del texto para que el comando limpie la palabra clave
+          await geminiCmd.run({ msg, sock, args: [body.trim()], usedPrefix: '', command: 'geminis', text: body.trim(), groupMetadata, participants, isAdmins, isBotAdmins, isOwner });
+          return; // Terminamos la ejecución para que no se duplique con el flujo normal
+        } catch (err) {
+          console.error('[Error en Interceptor Automático de Turnos Gemini]:', err);
+        }
+      }
+    }
+  }
+
   if (!match) return;
   if (msg.isCommands) return;
 
@@ -209,7 +246,7 @@ export default async (sock, msg) => {
       'twitter', 'x',                                  // twitter.js
       'xnxx',                                          // xnxx.js
       'xvideos',                                       // xvideos.js
-      'ia', 'chatgpt',                                 // chatgpt.js
+      'ia', 'geminis',                                 // chatgpt.js
       'say', 'decir'                                   // say.js
     ];
 

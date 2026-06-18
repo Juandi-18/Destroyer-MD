@@ -122,6 +122,8 @@ downloads: `» ˚୨•(=^●ω●^=)• ⊹ 𝐃𝐎𝐖𝐍𝐋𝐎𝐀𝐃�
 > Descargar un video de Facebook.
 ✧ *$prefixmediafire » $prefixmf* <url>
 > Descargar un archivo de MediaFire.
+✧ *$prefixgif » $prefixgiphy » $prefixtenor* <query>
+> Buscar y enviar GIFs de Tenor.
 ✧ *$prefixplay » $prefixmp3 » $prefixplayaudio » $prefixytaudio » $prefixytmp3* [url | query]
 > Descargar una canción de YouTube.
 ✧ *$prefixpinterest » $prefixpin* [url | query]
@@ -268,6 +270,8 @@ utils: `» ˚୨•(=^●ω●^=)• ⊹ 𝐔𝐓𝐈𝐋𝐈𝐓𝐈𝐄𝐒 �
 > Ver el número de bots activos.
 ✧ *$prefixstatus » $prefixestado*
 > Ver estado actual del bot.
+✧ *$prefixdoxear » $prefixdoxeo » $prefixtrack*
+> Simular un doxeo falso hiperrealista.
 ✧ *$prefixping » $prefixp » $prefixspeed*
 > Medir tiempo de respuesta del bot.
 ✧ *$prefixreport » $prefixreporte* [error]
@@ -276,7 +280,7 @@ utils: `» ˚୨•(=^●ω●^=)• ⊹ 𝐔𝐓𝐈𝐋𝐈𝐓𝐈𝐄𝐒 �
 > Enviar sugerencia a los moderadores.
 ✧ *$prefixinvitar » $prefixinvite* [link]
 > Invitar al bot a un grupo.
-✧ *$prefixia » $prefixchatgpt* [query]
+✧ *$prefixia » $prefixgeminis* [query]
 > Realizar peticiones a la IA.
 ✧ *$prefixgetpic » $prefixpfp* <mention>
 > Ver la foto de perfil de un usuario.
@@ -458,8 +462,6 @@ anime: `» ˚୨•(=^●ω●^=)• ⊹ 𝐀𝐍𝐈𝐌𝐄 ⊹
 > Jugar videojuegos con alguien.
 ✧ *$prefixdraw* <mention>
 > Hacer un dibujo inspirado en alguien.
-✧ *$prefixcall* <mention>
-> Llamar por teléfono a alguien.
 ✧ *$prefixseduce* <mention>
 > Intentar seducir a alguien.
 ✧ *$prefixbath* <mention>
