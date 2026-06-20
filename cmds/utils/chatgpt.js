@@ -47,7 +47,7 @@ function detectLanguage(query, response) {
 export default {
   command: ['ia', 'geminis'],
   category: 'utils',
-  description: 'IA directa con motor de imágenes, búsqueda en vivo y sistema antibuso de Cooldown.',
+  description: 'IA con Múltiples Bases de Datos, Visión, y Respaldo Inteligente.',
   run: async ({ msg, sock, args, usedPrefix, command }) => {
     let text = args.join(' ').trim();
     if (!text && msg.body) text = msg.body.trim();
@@ -57,10 +57,9 @@ export default {
     }
 
     if (!text) {
-      return msg.reply(`《✧》 Escriba una *petición* o una *instrucción de diseño* para Destroyer GenAI.`);
+      return msg.reply(`《✧》 Escriba una *petición* o una *instrucción* para Destroyer GenAI.`);
     }
 
-    // 🕒 CONFIGURACIÓN DEL COOLDOWN ANTISPAM (4 SEGUNDOS)
     const COOLDOWN_TIME = 4000; 
     const cooldownKey = `${msg.chat}-${msg.sender}`;
     const lastUsed = global.geminiCooldowns.get(cooldownKey);
@@ -81,12 +80,16 @@ export default {
     const username = user?.name || 'usuario';
     const botname = settings.botname || 'Bot';
     
-    const basePrompt = `Tu nombre es ${botname} y fuiste creada por |𝔇ĕ𝐬†𝓻⊙γĕ𝓻𒆜. Tu versión actual es @latest. Hablarás con el usuario llamándolo por su nombre: ${username}. Tu estilo de respuesta debe ser amigable, divertido y muy inteligente. Puedes procesar, crear o editar imágenes de forma nativa en este mismo chat si te lo solicitan de forma explícita.`;
+    const basePrompt = `Tu nombre es ${botname} y fuiste creada por |𝔇ĕ𝐬†𝓻⊙γĕ𝓻𒆜. Tu estilo es divertido e inteligente. Habla con el usuario por su nombre: ${username}.`;
 
-    const requiereImagen = /(crea|imagina|dibuja|genera|diseña|haz una foto|haz una imagen|haz un dibujo|muéstrame un)/i.test(text.toLowerCase());
+    const cleanText = text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    
+    const requiereImagen = /(crea|imagina|dibuja|genera|disena|haz una foto|haz una imagen|haz un dibujo|muestrame un)/i.test(cleanText);
+    const esLetraDeCancion = /(letra|lyrics|cancion)/i.test(cleanText);
+    const requiresVision = msg.quoted && (msg.quoted.message?.imageMessage || msg.quoted.message?.documentMessage?.mimetype?.startsWith('image/'));
 
     try {
-      const { key } = await sock.sendMessage(msg.chat, { text: `🧠 *[DESTROYER MULTIMEDIA ENGINE]* 🧠\n───────────────────\n📡 *Estado:* Conectando a Google AI Studio...\n⚡ *Modelo:* \`${requiereImagen ? 'Gemini 3.1 Flash Image' : 'Gemini 3.5 Flash'}\`\n🎨 *Modo:* \`${requiereImagen ? 'Generador de Imágenes Nativo' : 'Consulta Directa Estándar'}\`\n───────────────────\n_Procesando flujos de datos en tiempo real..._` }, { quoted: msg });
+      const { key } = await sock.sendMessage(msg.chat, { text: `🧠 *[DESTROYER MULTIMEDIA ENGINE]* 🧠\n───────────────────\n📡 *Estado:* Conectando a APIs centrales...\n⚡ *Módulo:* \`${requiereImagen ? 'Pollinations Image Engine' : (esLetraDeCancion ? 'Multi-Scraper Lyrics DB' : (requiresVision ? 'Gemini 3.5 Vision' : 'Gemini 3.5 Flash'))}\`\n───────────────────\n_Procesando flujos de datos en tiempo real..._` }, { quoted: msg });
       await msg.react('🕒');
 
       const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
@@ -117,43 +120,14 @@ export default {
         let textResult = '';
 
         try {
-          let contentsPayload = [{ text: text }];
-          if (msg.quoted && msg.quoted.message?.imageMessage) {
-            const buffer = await sock.downloadMediaMessage(msg.quoted);
-            if (buffer) {
-              contentsPayload.unshift({ inlineData: { mimeType: msg.quoted.message.imageMessage.mimetype, data: buffer.toString('base64') } });
-            }
+          const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(text)}?width=1024&height=1024&nologo=true`;
+          const imageRes = await fetch(imageUrl);
+          if (imageRes.ok) {
+            imageBufferResult = await imageRes.buffer();
+            textResult = `🎨 _Imagen generada con éxito vía Destroyer Engine._`;
           }
-
-          const response = await ai.models.generateContent({
-            model: 'gemini-3.1-flash-image',
-            contents: contentsPayload,
-            config: {
-              responseModalities: ['TEXT', 'IMAGE'],
-              responseFormat: { image: { aspectRatio: '1:1', imageSize: '1K' } },
-              tools: [{ googleSearch: { searchTypes: { webSearch: {}, imageSearch: {} } } }]
-            }
-          });
-
-          for (const part of response.candidates[0].content.parts) {
-            if (part.text) textResult += part.text;
-            else if (part.inlineData) imageBufferResult = Buffer.from(part.inlineData.data, 'base64');
-          }
-        } catch (imageErr) {
-          imageBufferResult = null;
-        }
-
-        if (!imageBufferResult) {
-          try {
-            const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(text)}?width=1024&height=1024&nologo=true`;
-            const imageRes = await fetch(imageUrl);
-            if (imageRes.ok) {
-              imageBufferResult = await imageRes.buffer();
-              textResult = `🎨 _Imagen generada con éxito vía Destroyer Engine (Capa de respaldo activa)._`;
-            }
-          } catch (backupErr) {
-            console.error('[Error en Respaldo Gráfico]:', backupErr.message);
-          }
+        } catch (backupErr) {
+          console.error('[Error en Motor Gráfico]:', backupErr.message);
         }
 
         if (imageBufferResult) {
@@ -163,57 +137,72 @@ export default {
           return;
         } else {
           await msg.react('❌');
-          return sock.sendMessage(msg.chat, { text: '《✧》 No se pudo generar la imagen debido a las restricciones de cuota actuales. Intenta más tarde.', edit: key });
+          return sock.sendMessage(msg.chat, { text: '《✧》 No se pudo generar la imagen debido a las restricciones actuales. Intenta más tarde.', edit: key });
         }
-      } else {
+      } else if (esLetraDeCancion) {
+        // 🎵 SISTEMA MULTI-SCRAPER: Busca en 2 bases de datos distintas antes de rendirse
+        try {
+          const songQuery = text.replace(/(buscame|busca|internet|en|la|letra|de|cancion|lyrics|geminis|por|favor|quiero)/gi, '').trim();
+          
+          // Base de datos 1: Some Random API (Muy buena con Rock en Español y metadatos)
+          try {
+            const sraRes = await fetch(`https://some-random-api.com/lyrics?title=${encodeURIComponent(songQuery)}`);
+            const sraJson = await sraRes.json();
+            if (sraJson && sraJson.lyrics) {
+              responseText = `🎵 *${sraJson.title}*\n👤 *${sraJson.author}*\n───────────────────\n\n${sraJson.lyrics}`;
+            }
+          } catch (e) {
+            console.log('[Info]: Falló SRA, pasando a Popcat DB...');
+          }
+
+          // Base de datos 2: Popcat (Si la Base 1 no encontró nada)
+          if (!responseText) {
+            const popcatRes = await fetch(`https://api.popcat.xyz/lyrics?song=${encodeURIComponent(songQuery)}`);
+            const popcatJson = await popcatRes.json();
+            if (popcatJson && popcatJson.lyrics) {
+              responseText = `🎵 *${popcatJson.title}*\n👤 *${popcatJson.artist}*\n───────────────────\n\n${popcatJson.lyrics}`;
+            } else {
+              throw new Error("No se encontró en las 2 bases de datos.");
+            }
+          }
+        } catch (lyricsErr) {
+          console.log('[Aviso Lyrics]:', lyricsErr.message);
+        }
+      }
+
+      // Si no fue imagen ni letra, O si el scraper multi-base falló
+      if (!responseText && !requiereImagen) {
         try {
           const response = await ai.models.generateContent({
-            model: 'gemini-3.5-flash',
+            model: 'gemini-3.5-flash', // Usamos el modelo top que tienes en tu consola
             contents: [{ role: 'user', parts: partsPayload }],
             config: {
               systemInstruction: basePrompt,
-              temperature: 0.7,
+              temperature: 0.5,
               maxOutputTokens: 2048,
               tools: [{ googleSearch: {} }]
             }
           });
           if (response && response.text) responseText = response.text;
         } catch (err) {
+          console.log('[Error Google API]:', err.message);
           responseText = null;
         }
       }
 
-      // 🔄 CASCADA DE FALLBACK INTELIGENTE ACTUALIZADA (GOOGLE RASPADO + DELIRIUS)
+      // 🛡️ CASCADA DE RESPALDO INTELIGENTE (LA CURA A LA "CEGUERA")
       if (!responseText && !requiereImagen) {
-        try {
-          // Si el usuario pide explícitamente una letra (lyrics), hacemos bypass directo a Google para evitar alucinaciones
-          if (/(letra|lyrics|cancion|cantas)/i.test(text.toLowerCase())) {
-            const searchRes = await fetch(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(text + ' letra')}`, {
-              headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
-            });
-            const html = await searchRes.text();
-            
-            // Si encontramos fragmentos web limpios, los usamos para alimentar el fallback de Delirius como contexto real
-            if (html && html.includes('result__snippet')) {
-              const snippets = html.match(/<a class="result__snippet"[\s\S]*?>([\s\S]*?)<\/a>/g)
-                ?.map(s => s.replace(/<[^>]*>/g, '').trim()).slice(0, 3).join('\n') || '';
-              
-              if (snippets) {
-                const res = await fetch(`${global.APIs.delirius.url}/ia/gptprompt?text=${encodeURIComponent('Devuelve ordenadamente la letra exacta usando esta información real extraída de internet:\n' + snippets)}&prompt=${encodeURIComponent(basePrompt)}`);
-                const json = await res.json();
-                if (json?.status && json?.data && json.data !== 'Error: No response') responseText = json.data;
-              }
-            }
-          }
-          
-          // Fallback tradicional en caso de que no sea una letra o falle el raspado previo
-          if (!responseText) {
+        if (requiresVision) {
+          // Si pediste analizar una imagen y Google falló (Cuota 429), NO vamos a Delirius porque es ciego.
+          await msg.react('❌');
+          return sock.sendMessage(msg.chat, { text: '《✧》 Mis procesadores visuales primarios están saturados (Límite de Cuota de API). Por favor, intenta enviarme la imagen de nuevo en un par de minutos.', edit: key });
+        } else {
+          // Si era texto normal, sí podemos usar a Delirius tranquilamente
+          try {
             const res = await fetch(`${global.APIs.delirius.url}/ia/gptprompt?text=${encodeURIComponent(text)}&prompt=${encodeURIComponent(basePrompt)}`);
             const json = await res.json();
             if (json?.status && json?.data && json.data !== 'Error: No response') responseText = json.data;
-          }
-        } catch (fallBackErr) {
-          console.log('[Error en Cascada de Datos]:', fallBackErr.message);
+          } catch {}
         }
       }
 
